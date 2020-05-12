@@ -27,10 +27,10 @@ from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.filters import OnboardingTaskFilter
 
 # from netbox_onboarding.choices import OnboardingStatusChoices
-from .serializers import OnboardingTasksSerializer
+from .serializers import OnboardingTaskSerializer
 
 
 class OnboardingTaskView(viewsets.ModelViewSet):
     queryset = OnboardingTask.objects.all()
     filterset_class = OnboardingTaskFilter
-    serializer_class = OnboardingTasksSerializer
+    serializer_class = OnboardingTaskSerializer
