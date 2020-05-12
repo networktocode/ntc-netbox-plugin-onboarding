@@ -13,6 +13,7 @@ limitations under the License.
 
 from utilities.choices import ChoiceSet
 
+
 class OnboardingStatusChoices(ChoiceSet):
 
     STATUS_FAILED = "failed"

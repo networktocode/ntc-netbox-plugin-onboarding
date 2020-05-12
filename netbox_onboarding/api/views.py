@@ -15,6 +15,7 @@ limitations under the License.
 # from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import viewsets
+
 # from rest_framework.decorators import action
 # from rest_framework.response import Response
 
@@ -24,8 +25,10 @@ from rest_framework import viewsets
 
 from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.filters import OnboardingTaskFilter
+
 # from netbox_onboarding.choices import OnboardingStatusChoices
 from .serializers import OnboardingTasksSerializer
+
 
 class OnboardingTaskView(viewsets.ModelViewSet):
     queryset = OnboardingTask.objects.all()

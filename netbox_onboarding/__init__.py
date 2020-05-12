@@ -27,4 +27,5 @@ class OnboardingConfig(PluginConfig):
     default_settings = {}
     caching_config = {}
 
+
 config = OnboardingConfig

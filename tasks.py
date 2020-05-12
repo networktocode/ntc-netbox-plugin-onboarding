@@ -25,9 +25,10 @@ def build(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
         python_ver (str): Will use the Python version docker image to build from
     """
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} build --build-arg netbox_ver={netbox_ver} --build-arg python_ver={python_ver}", 
-        env={'NETBOX_VER': netbox_ver, 'PYTHON_VER': python_ver}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} build --build-arg netbox_ver={netbox_ver} --build-arg python_ver={python_ver}",
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
+
 
 # ------------------------------------------------------------------------------
 # START / STOP / DEBUG
@@ -38,9 +39,10 @@ def debug(context):
 
     print(f"Starting Netbox .. ")
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
+
 
 @task
 def start(context):
@@ -48,9 +50,10 @@ def start(context):
 
     print(f"Starting Netbox in detached mode.. ")
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
+
 
 @task
 def stop(context):
@@ -58,22 +61,24 @@ def stop(context):
 
     print(f"Stopping Netbox .. ")
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
+
 
 @task
 def destroy(context):
     """Destroy all containers and volumes."""
 
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
     result = context.run(
-        f"docker volume rm -f {BUILD_NAME}_pgdata_netbox_onboarding", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker volume rm -f {BUILD_NAME}_pgdata_netbox_onboarding",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
+
 
 # ------------------------------------------------------------------------------
 # ACTIONS
@@ -84,9 +89,10 @@ def nbshell(context):
 
     result = context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py nbshell",
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
         pty=True,
     )
+
 
 @task
 def cli(context):
@@ -94,9 +100,10 @@ def cli(context):
 
     result = context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox bash",
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
         pty=True,
     )
+
 
 @task
 def create_user(context, user="admin"):
@@ -104,28 +111,30 @@ def create_user(context, user="admin"):
 
     result = context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py createsuperuser --username {user}",
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
         pty=True,
     )
+
 
 @task
 def makemigrations(context):
     """Run Make Migration in Django"""
 
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d postgres", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d postgres",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
 
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py makemigrations", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py makemigrations",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
 
     result = context.run(
-        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down", 
-        env={'NETBOX_VER': NETBOX_VER, 'PYTHON_VER': PYTHON_VER}, 
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
+
 
 # ------------------------------------------------------------------------------
 # TESTS / LINTING
@@ -187,7 +196,6 @@ def makemigrations(context):
 #     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
 #     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
 #     context.run(f"{DOCKER} pylama .", pty=True)
-
 
 
 # @task
