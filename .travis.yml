@@ -1,0 +1,20 @@
+---
+language: python
+
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+
+env:
+- NETBOX_VER=v2.8.1
+# - NETBOX_VER=latest
+
+services:
+  - docker
+
+before_script:
+  - pip install invoke docker-compose poetry
+
+script:
+  - invoke build --python-ver $TRAVIS_PYTHON_VERSION

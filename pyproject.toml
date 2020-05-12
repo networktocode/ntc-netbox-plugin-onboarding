@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "ntc-netbox-plugin-onboarding"
+version = "1.0.0"
+description = ""
+authors = ["Info <info@networktocode.com>"]
+packages = [
+    { include = "netbox_onboarding" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.6 || ^3.7 || ^3.8"
+invoke = "^1.4.1"
+first = "^2.0.2"
+napalm = "^2.5.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^4.6"
+black = "^19.10b0"
+yamllint = "^1.23.0"
+bandit = "^1.6.2"
+pylint = "^2.5.2"
+pylint-django = "^2.0.15"
+
+[tool.black]
+line-length = 120
+target-version = ['py36']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | settings.py     # This is where you define files that should not be stylized by black
+                     # the root of the project
+)
+'''
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+

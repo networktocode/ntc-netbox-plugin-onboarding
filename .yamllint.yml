@@ -1,0 +1,9 @@
+---
+extends: default
+
+rules:
+  truthy: disable
+  brackets: { min-spaces-inside: 0, max-spaces-inside: 1 }
+  braces: { min-spaces-inside: 0, max-spaces-inside: 1 }
+  line-length: { allow-non-breakable-inline-mappings: true, allow-non-breakable-words: true, max: 180 }
+  comments-indentation: disable
