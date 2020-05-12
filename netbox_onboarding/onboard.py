@@ -139,11 +139,9 @@ class NetdevKeeper(object):
         logging.info(f"COLLECT: device information {mgmt_ipaddr}")
 
         try:
-            platform = self.ot.platform.slug
-            if platform == "nxos":
-                platform = "nxos_ssh"
+            driver_name = self.ot.platform.napalm_driver
 
-            driver = get_network_driver(platform)
+            driver = get_network_driver(driver_name)
             dev = driver(hostname=mgmt_ipaddr, username=self.username, password=self.password, timeout=self.ot.timeout)
 
             dev.open()
