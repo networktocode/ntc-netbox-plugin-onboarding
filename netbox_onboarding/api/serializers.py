@@ -38,9 +38,9 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         many=False,
         read_only=False,
         queryset=Site.objects.all(),
-        slug_field="name",
+        slug_field="slug",
         required=True,
-        help_text="Short form site code - name",
+        help_text="NetBox site 'slug' value",
     )
 
     role = serializers.SlugRelatedField(
@@ -49,7 +49,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         queryset=DeviceRole.objects.all(),
         slug_field="slug",
         required=False,
-        help_text="NetBox device role 'name' value",
+        help_text="NetBox device role 'slug' value",
     )
 
     device_type = serializers.CharField(required=False, help_text="NetBox device type 'slug' value",)
@@ -63,11 +63,11 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         help_text="NetBox Platform 'slug' value",
     )
 
-    status = serializers.CharField(required=False, help_text="Onboading Status")
+    status = serializers.CharField(required=False, help_text="Onboarding Status")
 
     failed_raison = serializers.CharField(required=False, help_text="Failure reason")
 
-    message = serializers.CharField(required=False, help_text="NetBox Platform 'slug' value")
+    message = serializers.CharField(required=False, help_text="Status message")
 
     port = serializers.IntegerField(required=False, help_text="Device PORT to check for online")
 

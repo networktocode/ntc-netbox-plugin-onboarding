@@ -152,20 +152,18 @@ def makemigrations(context):
 # ------------------------------------------------------------------------------
 # TESTS / LINTING
 # ------------------------------------------------------------------------------
-# @task
-# def pytest(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run pytest for the specified name and Python version.
+@task
+def unittest(context):
+    """Run Django unit tests for the plugin.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     # pty is set to true to properly run the docker commands due to the invocation process of docker
-#     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-#     # Install python module
-#     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-#     context.run(f"{DOCKER} /bin/bash -c 'poetry install && pytest -vv'", pty=True)
+    Args:
+        context (obj): Used to run specific commands
+    """
+    result = context.run(
+        f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py test netbox_onboarding",
+        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        pty=True,
+    )
 
 
 # @task
@@ -240,26 +238,25 @@ def makemigrations(context):
 #     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
 #     context.run(f"{DOCKER} bandit --recursive ./ --configfile .bandit.yml", pty=True)
 
-# @task
-# def tests(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run all tests for the specified name and Python version.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     print("Running pytest...")
-#     pytest(context, NAME, python_ver)
-#     print("Running black...")
-#     black(context, NAME, python_ver)
-#     print("Running pylama...")
-#     pylama(context, NAME, python_ver)
-#     print("Running yamllint...")
-#     yamllint(context, NAME, python_ver)
-#     print("Running pydocstyle...")
-#     pydocstyle(context, NAME, python_ver)
-#     print("Running bandit...")
-#     bandit(context, NAME, python_ver)
+@task
+def tests(context):
+    """Run all tests for this plugin.
 
-#     print("All tests have passed!")
+    Args:
+         context (obj): Used to run specific commands
+    """
+    print("Running unit tests...")
+    unittest(context)
+    # print("Running black...")
+    # black(context, NAME, python_ver)
+    # print("Running pylama...")
+    # pylama(context, NAME, python_ver)
+    # print("Running yamllint...")
+    # yamllint(context, NAME, python_ver)
+    # print("Running pydocstyle...")
+    # pydocstyle(context, NAME, python_ver)
+    # print("Running bandit...")
+    # bandit(context, NAME, python_ver)
+
+    print("All tests have passed!")
