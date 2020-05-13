@@ -1,4 +1,5 @@
-"""
+"""Forms for network device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,7 +39,7 @@ class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
 
     q = forms.CharField(required=False, label="Search")
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = ["q", "site", "platform", "status", "failed_reason"]
 
@@ -76,6 +77,6 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
         error_messages={"invalid_choice": "DeviceRole not found",},
     )
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = OnboardingTask.csv_headers

@@ -1,4 +1,5 @@
-"""
+"""Model serializers for the netbox_onboarding REST API.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,7 +73,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
 
     timeout = serializers.IntegerField(required=False, help_text="Timeout (sec) for device connect")
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = [
             "id",
@@ -93,6 +94,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        """Create an OnboardingTask and enqueue it for processing."""
         # Fields are string-type so default to empty (instead of None)
         username = validated_data.pop("username", "")
         password = validated_data.pop("password", "")

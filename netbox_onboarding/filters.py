@@ -1,4 +1,5 @@
-"""
+"""Filtering logic for OnboardingTask instances.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,11 +42,12 @@ class OnboardingTaskFilter(NameSlugSearchFilterSet):
         field_name="role__slug", queryset=DeviceRole.objects.all(), to_field_name="slug", label="Device Role (slug)",
     )
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = ["id", "site", "site_id", "platform", "role", "status", "failed_reason"]
 
     def search(self, queryset, name, value):
+        """Perform the filtered search."""
         if not value.strip():
             return queryset
         qs_filter = (

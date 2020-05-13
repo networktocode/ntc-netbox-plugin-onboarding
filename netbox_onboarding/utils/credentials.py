@@ -1,4 +1,5 @@
-"""
+"""User credentials helper module for device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,14 +14,14 @@ limitations under the License.
 
 
 class Credentials:
-    """
-    Class used to hide user's credentials in RQ worker and Django
-    """
+    """Class used to hide user's credentials in RQ worker and Django."""
 
     def __init__(self, username=None, password=None, secret=None):
+        """Create a Credentials instance."""
         self.username = username
         self.password = password
         self.secret = secret
 
     def __repr__(self):
+        """Return string representation of a Credentials object."""
         return "*Credentials argument hidden*"

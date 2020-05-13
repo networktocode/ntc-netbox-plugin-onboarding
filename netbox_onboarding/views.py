@@ -1,4 +1,5 @@
-"""
+"""Django views for device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,6 +45,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
     """View for bulk-importing a CSV file to create OnboardingTasks."""
 
     def post(self, request):
+        """Process an HTTP POST request."""
         new_objs = []
         form = self._import_form(request.POST)
 

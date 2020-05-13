@@ -1,4 +1,5 @@
-"""
+"""Worker code for processing inbound OnboardingTasks.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,10 +28,9 @@ __all__ = []
 
 
 class OnboardException(Exception):
-    """
-    Any failure during the onboard process will result in an an
-    OnboardException. The exception includes a reason "slug" as defined below
-    as well as a humanized message.
+    """A failure occurred during the onboarding process.
+
+    The exception includes a reason "slug" as defined below as well as a humanized message.
     """
 
     REASONS = (
@@ -58,26 +58,20 @@ class OnboardException(Exception):
 
 
 class NetdevKeeper:
-    """
-    Used to maintain information about the network device during the onboarding
-    process.
-    """
+    """Used to maintain information about the network device during the onboarding process."""
 
     def __init__(self, onboarding_task, username=None, password=None):
-        """
-        Initialize the network device keeper instance and ensure the required
-        configuration parameters are provided.
+        """Initialize the network device keeper instance and ensure the required configuration parameters are provided.
 
-        Parameters
-        ----------
-        config : dict - config params.
+        Args:
+          onboarding_task (OnboardingTask): Task being processed
+          username (str): Device username (if unspecified, NAPALM_USERNAME environment variable will be used)
+          password (str): Device password (if unspecified, NAPALM_PASSWORD environment variable will be used)
 
-        Raises
-        ------
-        OnboardException('fail-config'):
+        Raises:
+          OnboardException('fail-config'):
             When any required config options are missing.
         """
-
         self.ot = onboarding_task
 
         # Attributes that are set when reading info from device
@@ -92,14 +86,13 @@ class NetdevKeeper:
         self.password = password or os.environ.get("NAPALM_PASSWORD", None)
 
     def check_reachability(self):
-        """
-        Ensure that the device at the mgmt-ipaddr provided is reachable.  We do this
-        check before attempting other "show" commands so that we know we've got a
+        """Ensure that the device at the mgmt-ipaddr provided is reachable.
+
+        We do this check before attempting other "show" commands so that we know we've got a
         device that can be reached.
 
-        Raises
-        ------
-        OnboardException('fail-connect'):
+        Raises:
+          OnboardException('fail-connect'):
             When device unreachable
         """
         ip_addr = self.ot.ip_address
@@ -117,19 +110,16 @@ class NetdevKeeper:
             raise OnboardException(reason="fail-connect", message=f"ERROR device unreachable: {ip_addr}:{port}")
 
     def get_required_info(self):
-        """
-        Gather information from the network device that is needed to onboard
-        the device into the NetBox system.
+        """Gather information from the network device that is needed to onboard the device into the NetBox system.
 
-        Raises
-        ------
-        OnboardException('fail-login'):
+        Raises:
+          OnboardException('fail-login'):
             When unable to login to device
 
-        OnboardException('fail-exectute'):
+          OnboardException('fail-execute'):
             When unable to run commands to collect device information
 
-        OnboardException('fail-general'):
+          OnboardException('fail-general'):
             Any other unexpected device comms failure.
         """
         self.check_reachability()
@@ -192,19 +182,13 @@ class NetdevKeeper:
 
 
 class NetboxKeeper:
-    """
-    Used to manage the information relating to the network device within the
-    NetBox server.
-    """
+    """Used to manage the information relating to the network device within the NetBox server."""
 
     def __init__(self, netdev):
-        """
-        Creates an instance to the NetBox API and initializes the managed
-        attributes that are used throughout the onboard processing.
+        """Create an instance and initialize the managed attributes that are used throughout the onboard processing.
 
-        Parameters
-        ----------
-        netdev : NetdevKeeper - instance
+        Args:
+          netdev (NetdevKeeper): instance
         """
         self.netdev = netdev
 
@@ -221,22 +205,18 @@ class NetboxKeeper:
         self.primary_ip = None
 
     def ensure_device_type(self):
-        """
-        This function ensures that the Device Type (slug) exists in NetBox
-        assocaited to the netdev "model" and  `vendor` (manufacturer).
+        """Ensure the Device Type (slug) exists in NetBox associated to the netdev "model" and "vendor" (manufacturer).
 
-        Raises
-        ------
-        OnboardException('fail-config'):
+        Raises:
+          OnboardException('fail-config'):
             When the device vendor value does not exist as a Manufacturer in
             NetBox.
 
-        OnboardException('fail-config'):
+          OnboardException('fail-config'):
             When the device-type exists by slug, but is assigned to a different
             manufacturer.  This should *not* happen, but guard-rail checking
             regardless in case two vendors have the same model name.
         """
-
         # First ensure that the vendor, as extracted from the network device exists
         # in NetBox.  We need the ID for this vendor when ensuring the DeviceType
         # instance.
@@ -280,11 +260,7 @@ class NetboxKeeper:
         self.device_type.save()
 
     def ensure_device_instance(self):
-        """
-        Ensure that the device instance exists in NetBox and is assigned either
-        the provide device role, or uses the DEFAULT_ROLE value.
-        """
-
+        """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE."""
         self.device, _ = Device.objects.get_or_create(
             name=self.netdev.hostname,
             device_type=self.device_type,
@@ -297,19 +273,11 @@ class NetboxKeeper:
         self.device.save()
 
     def ensure_interface(self):
-        """
-        Ensures that the interface associated with the mgmt_ipaddr exists and
-        is assigned to the device.
-        """
-
+        """Ensure that the interface associated with the mgmt_ipaddr exists and is assigned to the device."""
         self.interface, _ = Interface.objects.get_or_create(name=self.netdev.mgmt_ifname, device=self.device)
 
     def ensure_primary_ip(self):
-        """
-        Ensure that the network device mgmt_ipaddr exists in IPAM, is assigned
-        to the device interface, and is also assigned as the device primary IP
-        address.
-        """
+        """Ensure mgmt_ipaddr exists in IPAM, has the device interface, and is assigned as the primary IP address."""
         mgmt_ipaddr = self.netdev.ot.ip_address
 
         # see if the primary IP address exists in IPAM
@@ -328,9 +296,9 @@ class NetboxKeeper:
         self.device.save()
 
     def ensure_device(self):
-        """
-        Ensure that the device represented by the dev_info data exists in the NetBox
-        system.  This means the following is true:
+        """Ensure that the device represented by the dev_info data exists in the NetBox system.
+
+        This means the following is true:
 
             1. The device 'hostname' exists and is a member of 'site'
             2. The 'serial_number' is assigned to the device
@@ -343,7 +311,6 @@ class NetboxKeeper:
         an OnboardException.
 
         """
-
         self.ensure_device_type()
         self.ensure_device_instance()
         self.ensure_interface()

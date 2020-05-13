@@ -1,4 +1,5 @@
-"""
+"""OnboardingTask Django model.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,9 +17,7 @@ from .choices import OnboardingStatusChoices, OnboardingFailChoices
 
 
 class OnboardingTask(models.Model):
-    """
-    The status of each onboarding Task is tracked in the OnboardingTask table
-    """
+    """The status of each onboarding Task is tracked in the OnboardingTask table."""
 
     group_id = models.CharField(max_length=255, help_text="CSV Bulk Import Group ID (optional)", blank=True)
 
@@ -73,5 +72,5 @@ class OnboardingTask(models.Model):
         "role",
     ]
 
-    class Meta:
+    class Meta:  # noqa: D106 "missing docstring in public nested class"
         ordering = ["created_on"]
