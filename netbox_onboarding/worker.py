@@ -10,9 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import warnings
 import logging
-import os
 
 from django_rq import job
 
@@ -20,17 +18,15 @@ from .models import OnboardingTask
 from .onboard import NetboxKeeper, NetdevKeeper, OnboardException
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 
-from netbox_onboarding.utils.credentials import Credentials
-
 logger = logging.getLogger("rq.worker")
 logger.setLevel(logging.DEBUG)
 
 
 @job("default")
 def onboard_device(task_id, credentials):
+    """Process a single OnboardingTask instance."""
     username = credentials.username
     password = credentials.password
-    secret = credentials.secret
 
     ot = OnboardingTask.objects.get(id=task_id)
 
@@ -41,10 +37,10 @@ def onboard_device(task_id, credentials):
         ot.save()
 
         netdev = NetdevKeeper(ot, username, password)
-        nb = NetboxKeeper(netdev=netdev)
+        nbk = NetboxKeeper(netdev=netdev)
 
         netdev.get_required_info()
-        nb.ensure_device()
+        nbk.ensure_device()
 
     except OnboardException as exc:
         ot.status = OnboardingStatusChoices.STATUS_FAILED

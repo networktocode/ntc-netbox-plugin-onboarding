@@ -12,7 +12,7 @@ limitations under the License.
 """
 
 
-class Credentials(object):
+class Credentials:
     """
     Class used to hide user's credentials in RQ worker and Django
     """

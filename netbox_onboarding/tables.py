@@ -16,6 +16,8 @@ from .models import OnboardingTask
 
 
 class OnboardingTaskTable(BaseTable):
+    """Table for displaying OnboardingTask instances."""
+
     site = tables.LinkColumn()
 
     class Meta(BaseTable.Meta):
@@ -24,6 +26,8 @@ class OnboardingTaskTable(BaseTable):
 
 
 class OnboardingTaskFeedBulkTable(BaseTable):
+    """TODO document me."""
+
     site = tables.LinkColumn()
 
     class Meta(BaseTable.Meta):

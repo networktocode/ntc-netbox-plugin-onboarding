@@ -11,19 +11,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import re
-from ipaddress import ip_address
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from django_rq import get_queue
 
-from dcim.models import Device, Interface, InventoryItem, Site, DeviceRole, Platform
+from dcim.models import Site, DeviceRole, Platform
 
 from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.utils.credentials import Credentials
 
 
 class OnboardingTaskSerializer(serializers.ModelSerializer):
+    """Serializer for the OnboardingTask model."""
+
     device = serializers.CharField(required=False, help_text="Planned device name",)
 
     ip_address = serializers.CharField(required=True, help_text="IP Address to reach device",)

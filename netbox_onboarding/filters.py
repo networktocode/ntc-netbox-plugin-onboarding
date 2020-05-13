@@ -12,16 +12,16 @@ limitations under the License.
 """
 
 import django_filters
-from rest_framework.exceptions import ValidationError
-from dcim.models import Site, Device, DeviceRole, Platform
 from django.db.models import Q
 
-from utilities.filters import NameSlugSearchFilterSet, TagFilter
+from dcim.models import Site, DeviceRole, Platform
+from utilities.filters import NameSlugSearchFilterSet
 
 from .models import OnboardingTask
 
 
 class OnboardingTaskFilter(NameSlugSearchFilterSet):
+    """Filter capabilities for OnboardingTask instances."""
 
     q = django_filters.CharFilter(method="search", label="Search",)
 

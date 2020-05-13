@@ -15,6 +15,7 @@ from utilities.choices import ChoiceSet
 
 
 class OnboardingStatusChoices(ChoiceSet):
+    """Valid values for OnboardingTask "status"."""
 
     STATUS_FAILED = "failed"
     STATUS_PENDING = "pending"
@@ -30,6 +31,7 @@ class OnboardingStatusChoices(ChoiceSet):
 
 
 class OnboardingFailChoices(ChoiceSet):
+    """Valid values for OnboardingTask "failed reason"."""
 
     FAIL_LOGIN = "fail-login"
     FAIL_CONFIG = "fail-config"

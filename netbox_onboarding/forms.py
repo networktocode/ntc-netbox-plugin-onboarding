@@ -15,7 +15,7 @@ from django import forms
 
 from utilities.forms import BootstrapMixin
 from dcim.models import Site, Platform, DeviceRole
-from extras.forms import CustomFieldModelCSVForm, CustomFieldFilterForm
+from extras.forms import CustomFieldModelCSVForm
 
 from .models import OnboardingTask
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
@@ -24,6 +24,8 @@ BLANK_CHOICE = (("", "---------"),)
 
 
 class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
+    """Form for filtering OnboardingTask instances."""
+
     site = forms.ModelChoiceField(queryset=Site.objects.all(), required=False, to_field_name="slug")
 
     platform = forms.ModelChoiceField(queryset=Platform.objects.all(), required=False, to_field_name="slug")
@@ -42,6 +44,8 @@ class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
 
 
 class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
+    """TODO document me."""
+
     site = forms.ModelChoiceField(
         queryset=Site.objects.all(),
         required=True,

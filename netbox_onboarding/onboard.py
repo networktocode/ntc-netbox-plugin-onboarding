@@ -15,16 +15,15 @@ import logging
 import socket
 import re
 import os
-import logging
 from first import first
 
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
 
-from dcim.models import Manufacturer, Device, Interface, DeviceType, DeviceRole
+from dcim.models import Manufacturer, Device, Interface, DeviceType
 from ipam.models import IPAddress
 
-__all__ = ["onboard"]
+__all__ = []
 
 
 class OnboardException(Exception):
@@ -58,7 +57,7 @@ class OnboardException(Exception):
 # -----------------------------------------------------------------------------
 
 
-class NetdevKeeper(object):
+class NetdevKeeper:
     """
     Used to maintain information about the network device during the onboarding
     process.
@@ -107,12 +106,12 @@ class NetdevKeeper(object):
         port = self.ot.port
         timeout = self.ot.timeout
 
-        logging.info(f"CHECK: IP {ip_addr}:{port}")
+        logging.info("CHECK: IP %s:%s", ip_addr, port)
 
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(timeout)
-            s.connect((ip_addr, port))
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            sock.connect((ip_addr, port))
 
         except (socket.error, socket.timeout, ConnectionError):
             raise OnboardException(reason="fail-connect", message=f"ERROR device unreachable: {ip_addr}:{port}")
@@ -136,7 +135,7 @@ class NetdevKeeper(object):
         self.check_reachability()
         mgmt_ipaddr = self.ot.ip_address
 
-        logging.info(f"COLLECT: device information {mgmt_ipaddr}")
+        logging.info("COLLECT: device information %s", mgmt_ipaddr)
 
         try:
             driver_name = self.ot.platform.napalm_driver
@@ -145,10 +144,10 @@ class NetdevKeeper(object):
             dev = driver(hostname=mgmt_ipaddr, username=self.username, password=self.password, timeout=self.ot.timeout)
 
             dev.open()
-            logging.info(f"COLLECT: device facts")
+            logging.info("COLLECT: device facts")
             facts = dev.get_facts()
 
-            logging.info(f"COLLECT: device interface IPs")
+            logging.info("COLLECT: device interface IPs")
             ip_ifs = dev.get_interfaces_ip()
 
         except ConnectionException as exc:
@@ -192,7 +191,7 @@ class NetdevKeeper(object):
 # -----------------------------------------------------------------------------
 
 
-class NetboxKeeper(object):
+class NetboxKeeper:
     """
     Used to manage the information relating to the network device within the
     NetBox server.
@@ -252,19 +251,18 @@ class NetboxKeeper(object):
 
         slug = self.netdev.model
         if re.search(r"[^a-zA-Z0-9\-_]+", slug):
-            logging.warning(f"device model is not sluggable: {slug}")
+            logging.warning("device model is not sluggable: %s", slug)
             self.netdev.model = slug.replace(" ", "-")
-            logging.warning(f"device model is now: {self.netdev.model}")
+            logging.warning("device model is now: %s", self.netdev.model)
 
         try:
             self.device_type = DeviceType.objects.get(slug=self.netdev.model)
         except DeviceType.DoesNotExist:
-            logging.info(f" device-type no not exist yet")
-            pass
+            logging.info("device-type does not exist yet")
 
         if self.device_type:
             if self.device_type.manufacturer.id == self.manufacturer.id:
-                logging.info(f"EXISTS: device-type: {self.netdev.model}")
+                logging.info("EXISTS: device-type: %s", self.netdev.model)
                 return
 
             raise OnboardException(
@@ -273,7 +271,7 @@ class NetboxKeeper(object):
             )
 
         # At this point create and return the new netbox device-type instance.from
-        logging.info(f"CREATE: device-type: {self.netdev.model}")
+        logging.info("CREATE: device-type: %s", self.netdev.model)
 
         self.device_type = DeviceType.objects.create(
             slug=self.netdev.model, model=self.netdev.model.upper(), manufacturer=self.manufacturer
@@ -287,7 +285,7 @@ class NetboxKeeper(object):
         the provide device role, or uses the DEFAULT_ROLE value.
         """
 
-        self.device, created = Device.objects.get_or_create(
+        self.device, _ = Device.objects.get_or_create(
             name=self.netdev.hostname,
             device_type=self.device_type,
             device_role=self.netdev.ot.role,
@@ -304,7 +302,7 @@ class NetboxKeeper(object):
         is assigned to the device.
         """
 
-        self.interface, created = Interface.objects.get_or_create(name=self.netdev.mgmt_ifname, device=self.device)
+        self.interface, _ = Interface.objects.get_or_create(name=self.netdev.mgmt_ifname, device=self.device)
 
     def ensure_primary_ip(self):
         """
@@ -320,7 +318,7 @@ class NetboxKeeper(object):
         )
 
         if created or not self.primary_ip.interface:
-            logging.info(f"ASSIGN: IP address {self.primary_ip.address} to {self.interface.name}")
+            logging.info("ASSIGN: IP address %s to %s", self.primary_ip.address, self.interface.name)
             self.primary_ip.interface = self.interface
 
         self.primary_ip.save()

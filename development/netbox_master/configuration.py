@@ -1,3 +1,4 @@
+"""Netbox configuration file."""
 import os
 
 # For reference see http://netbox.readthedocs.io/en/latest/configuration/mandatory-settings/

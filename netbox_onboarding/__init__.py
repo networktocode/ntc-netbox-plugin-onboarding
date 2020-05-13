@@ -17,6 +17,8 @@ from extras.plugins import PluginConfig
 
 
 class OnboardingConfig(PluginConfig):
+    """Plugin configuration for the netbox_onboarding plugin."""
+
     name = "netbox_onboarding"
     verbose_name = "Plugin for Easy Device Onboarding"
     version = "1.0.0"
@@ -28,4 +30,4 @@ class OnboardingConfig(PluginConfig):
     caching_config = {}
 
 
-config = OnboardingConfig
+config = OnboardingConfig  # pylint:disable=invalid-name

@@ -12,7 +12,6 @@ limitations under the License.
 """
 
 from extras.plugins import PluginMenuButton, PluginMenuItem
-from utilities.choices import ButtonColorChoices
 
 menu_items = (
     PluginMenuItem(
