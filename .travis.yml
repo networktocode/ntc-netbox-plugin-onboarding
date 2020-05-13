@@ -6,9 +6,11 @@ python:
   - "3.7"
   - "3.8"
 
+# Each version of NetBox listed here must have a corresponding directory/configuration file 
+# under development/netbox_<NETBOX_VER>/configuration.py
 env:
-- NETBOX_VER=v2.8.1
-# - NETBOX_VER=latest
+- NETBOX_VER=v2.8.3
+- NETBOX_VER=master
 
 services:
   - docker
