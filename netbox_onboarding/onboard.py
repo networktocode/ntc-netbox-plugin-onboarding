@@ -13,16 +13,19 @@ limitations under the License.
 """
 
 import logging
-import socket
-import re
 import os
+import re
+import socket
 from first import first
-
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
 
 from dcim.models import Manufacturer, Device, Interface, DeviceType
 from ipam.models import IPAddress
+from netmiko.ssh_autodetect import SSHDetect
+from netmiko.ssh_exception import NetMikoAuthenticationException
+from netmiko.ssh_exception import NetMikoTimeoutException
+from paramiko.ssh_exception import SSHException
 
 __all__ = []
 
@@ -109,6 +112,83 @@ class NetdevKeeper:
         except (socket.error, socket.timeout, ConnectionError):
             raise OnboardException(reason="fail-connect", message=f"ERROR device unreachable: {ip_addr}:{port}")
 
+    @staticmethod
+    def guess_netmiko_device_type(**kwargs):
+        """
+        Guess the device type of host, based on Netmiko
+        """
+        guessed_device_type = None
+
+        remote_device = {
+            'device_type': 'autodetect',
+            'host': kwargs.get('host'),
+            'username': kwargs.get('username'),
+            'password': kwargs.get('password'),
+        }
+
+        try:
+            logging.info(
+                "INFO guessing device type: {}".format(str(kwargs.get('host'))))
+            guesser = SSHDetect(**remote_device)
+            guessed_device_type = guesser.autodetect()
+            logging.info(
+                "INFO guessed device type: {}".format(str(guessed_device_type)))
+
+        except NetMikoAuthenticationException as err:
+            logging.error("ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-login",
+                                   message="ERROR {}".format(str(err)))
+
+        except (NetMikoTimeoutException, SSHException) as err:
+            logging.error("ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-connect",
+                                   message="ERROR {}".format(str(err)))
+
+        except Exception as err:
+            logging.error("ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-general",
+                                   message="ERROR {}".format(str(err)))
+
+        logging.info("INFO device type is {}".format(str(guessed_device_type)))
+
+        return guessed_device_type
+
+    def get_platform_name(self):
+        """
+        Get platform name in netmiko format (ie cisco_ios, cisco_xr etc)
+        """
+        if self.ot.platform:
+            platform_name = self.ot.platform.name
+        else:
+            platform_name = self.guess_netmiko_device_type(
+                host=self.ot.ip_address,
+                username=self.username,
+                password=self.password
+            )
+
+        logging.info(f"PLATFORM NAME is {platform_name}")
+
+        return platform_name
+
+    @staticmethod
+    def get_platform_object_from_netbox(platform_name):
+        """
+        Get platform object from NetBox filtered by platform_name
+
+        Lookup is performed based on the object's slug field (not the name field)
+        """
+        try:
+            platform_object = Platform.objects.get(
+                slug=platform_name)
+            logging.info(f"PLATFORM: found in NetBox {platform_name}")
+        except Platform.DoesNotExist:
+            raise OnboardException(
+                reason='fail-general',
+                message=f"ERROR platform not found in NetBox: {platform_name}"
+            )
+
+        return platform_object
+
     def get_required_info(self):
         """Gather information from the network device that is needed to onboard the device into the NetBox system.
 
@@ -128,7 +208,15 @@ class NetdevKeeper:
         logging.info("COLLECT: device information %s", mgmt_ipaddr)
 
         try:
-            driver_name = self.ot.platform.napalm_driver
+            platform_name = self.get_platform_name()
+
+            platform_object = self.get_platform_object_from_netbox(platform_name=platform_name)
+
+            driver_name = platform_object.napalm_driver
+
+            if not driver_name:
+                raise OnboardException(reason='fail-general',
+                                       message=f"Onboarding for platform {platform_name} not supported")
 
             driver = get_network_driver(driver_name)
             dev = driver(hostname=mgmt_ipaddr, username=self.username, password=self.password, timeout=self.ot.timeout)
