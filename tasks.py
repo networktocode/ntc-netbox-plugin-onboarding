@@ -43,50 +43,49 @@ def build(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
-
 # ------------------------------------------------------------------------------
 # START / STOP / DEBUG
 # ------------------------------------------------------------------------------
 @task
-def debug(context):
+def debug(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Start NetBox and its dependencies in debug mode."""
     print("Starting Netbox .. ")
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
 
 @task
-def start(context):
+def start(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Start NetBox and its dependencies in detached mode."""
     print("Starting Netbox in detached mode.. ")
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
 
 @task
-def stop(context):
+def stop(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Stop NetBox and its dependencies."""
     print("Stopping Netbox .. ")
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
 
 @task
-def destroy(context):
+def destroy(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Destroy all containers and volumes."""
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
     context.run(
         f"docker volume rm -f {BUILD_NAME}_pgdata_netbox_onboarding",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
 
@@ -94,51 +93,51 @@ def destroy(context):
 # ACTIONS
 # ------------------------------------------------------------------------------
 @task
-def nbshell(context):
+def nbshell(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Launch a nbshell session."""
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py nbshell",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )
 
 
 @task
-def cli(context):
+def cli(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Launch a bash shell inside the running NetBox container."""
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox bash",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )
 
 
 @task
-def create_user(context, user="admin"):
+def create_user(context, user="admin", netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Create a new user in django (default: admin), will prompt for password."""
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py createsuperuser --username {user}",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )
 
 
 @task
-def makemigrations(context):
+def makemigrations(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run Make Migration in Django."""
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d postgres",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py makemigrations",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
-        env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
 
@@ -146,18 +145,21 @@ def makemigrations(context):
 # TESTS / LINTING
 # ------------------------------------------------------------------------------
 @task
-def unittest(context):
+def unittest(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run Django unit tests for the plugin.
 
     Args:
         context (obj): Used to run specific commands
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
-    context.run(f'{docker} sh -c "python manage.py test netbox_onboarding"', pty=True)
-
+    context.run(
+        f'{docker} sh -c "python manage.py test netbox_onboarding"', 
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
+        pty=True
+    )
 
 @task
-def pylint(context):
+def pylint(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run pylint code analysis.
 
     Args:
@@ -168,23 +170,28 @@ def pylint(context):
     context.run(
         f"{docker} sh -c \"cd /source && find . -name '*.py' -not -path '*/migrations/*' | "
         'PYTHONPATH=/opt/netbox/netbox xargs pylint"',
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )
 
 
 @task
-def black(context):
+def black(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run black to check that Python files adhere to its style standards.
 
     Args:
         context (obj): Used to run specific commands
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
-    context.run(f'{docker} sh -c "cd /source && black --check --diff ."', pty=True)
+    context.run(
+        f'{docker} sh -c "cd /source && black --check --diff ."', 
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
+        pty=True
+    )
 
 
 @task
-def pydocstyle(context):
+def pydocstyle(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run pydocstyle to validate docstring formatting adheres to NTC defined standards.
 
     Args:
@@ -194,23 +201,27 @@ def pydocstyle(context):
     # We exclude the /migrations/ directory since it is autogenerated code
     context.run(
         f"{docker} sh -c \"cd /source && find . -name '*.py' -not -path '*/migrations/*' | xargs pydocstyle\"",
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )
 
 
 @task
-def bandit(context):
+def bandit(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run bandit to validate basic static code security analysis.
 
     Args:
         context (obj): Used to run specific commands
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
-    context.run(f'{docker} sh -c "cd /source && bandit --recursive ./"', pty=True)
-
+    context.run(
+        f'{docker} sh -c "cd /source && bandit --recursive ./"', 
+        env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
+        pty=True
+    )
 
 @task
-def tests(context):
+def tests(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """Run all tests for this plugin.
 
     Args:
@@ -218,15 +229,15 @@ def tests(context):
     """
     # Sorted loosely from fastest to slowest
     print("Running black...")
-    black(context)
+    black(context, netbox_ver=netbox_ver, python_ver=python_ver)
     print("Running bandit...")
-    bandit(context)
+    bandit(context, netbox_ver=netbox_ver, python_ver=python_ver)
     print("Running pydocstyle...")
-    pydocstyle(context)
+    pydocstyle(context, netbox_ver=netbox_ver, python_ver=python_ver)
     print("Running pylint...")
-    pylint(context)
+    pylint(context, netbox_ver=netbox_ver, python_ver=python_ver)
     print("Running unit tests...")
-    unittest(context)
+    unittest(context, netbox_ver=netbox_ver, python_ver=python_ver)
     # print("Running yamllint...")
     # yamllint(context, NAME, python_ver)
 
