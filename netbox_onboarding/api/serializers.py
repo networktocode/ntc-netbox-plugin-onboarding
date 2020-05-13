@@ -15,78 +15,12 @@ import re
 from ipaddress import ip_address
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from django_rq import get_queue
 
 from dcim.models import Device, Interface, InventoryItem, Site, DeviceRole, Platform
 
 from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.utils.credentials import Credentials
-
-
-def sort_by_digits(if_name: str) -> tuple:
-    """
-    Extract all digits from a string and return them as tuple
-    Args:
-      if_name:
-    Returns:
-      tuple of all digits in the string
-    """
-    find_digit = re.compile(r"\D?(\d+)\D?")
-    return tuple(map(int, find_digit.findall(if_name)))
-
-
-class OnboardDeviceSerializer(serializers.Serializer):
-    """
-    Returns a dictionary payload of validated data
-    {
-      "mgmt_ipadd": <IP>,
-      "site": <str Site.slug>,
-      "platform": <str Platform.slug>,
-      "role": <str DeviceRole.slug optional>,
-      "username": <str optional>,
-      "password": <str secret optional>,
-      "timeout": <int optional>,
-      "port": <int optional>
-    }
-    """
-
-    mgmt_ipaddr = serializers.CharField(required=True, help_text="primary ip address to connect to the device")
-    site = serializers.CharField(required=True, help_text="Short form site code")
-    platform = serializers.CharField(required=True, help_text="NetBox Platform 'slug' value")
-    role = serializers.CharField(required=False, help_text="NetBox device role 'slug' value", default="unassigned")
-    username = serializers.CharField(required=False, help_text="device login user-name")
-    password = serializers.CharField(required=False, help_text="device login password")
-    timeout = serializers.IntegerField(required=False, help_text="Timeout (sec) for device connect", default=30)
-    port = serializers.IntegerField(required=False, help_text="Device PORT to check for online", default=22)
-
-    def validate_mgmt_ipadd(self, value):
-        try:
-            ip_address(value)
-            return value
-        except ValueError:
-            raise ValidationError(f"{value}: invalid IP address")
-
-    def validate_site(self, value):
-        try:
-            Site.objects.get(slug=value)
-        except Site.DoesNotExist:
-            raise ValidationError({"errmsg": f"{value}: invalid site code (Site.slug)"})
-        return value
-
-    def validate_platform(self, value):
-        try:
-            Platform.objects.get(slug=value)
-        except Platform.DoesNotExist:
-            raise ValidationError({"errmsg": f"{value}: invalid platform (Platform.slug)"})
-        return value
-
-    def validate_role(self, value):
-        if value == "unassigned":
-            return value
-        try:
-            DeviceRole.objects.get(slug=value)
-        except DeviceRole.DoesNotExist:
-            raise ValidationError({"errmsg": f"{value}: invalid device role (DeviceRole.slug)"})
-        return value
 
 
 class OnboardingTaskSerializer(serializers.ModelSerializer):
@@ -125,8 +59,8 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         read_only=False,
         queryset=Platform.objects.all(),
         slug_field="slug",
-        required=False,
-        help_text="NetBox Platform 'name' value",
+        required=True,
+        help_text="NetBox Platform 'slug' value",
     )
 
     status = serializers.CharField(required=False, help_text="Onboading Status")
