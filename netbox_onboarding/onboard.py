@@ -22,16 +22,20 @@ from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
 
 from django.conf import settings
-from dcim.models import Manufacturer, Device, Interface, DeviceType, Platform, DeviceRole
-from ipam.models import IPAddress
 
-from .constants import NETMIKO_TO_NAPALM
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
 from netmiko.ssh_exception import NetMikoTimeoutException
 from paramiko.ssh_exception import SSHException
 
+from dcim.models import Manufacturer, Device, Interface, DeviceType, Platform, DeviceRole
+from ipam.models import IPAddress
+
+from .constants import NETMIKO_TO_NAPALM
+
 __all__ = []
+
+PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
 class OnboardException(Exception):
@@ -118,9 +122,7 @@ class NetdevKeeper:
 
     @staticmethod
     def guess_netmiko_device_type(**kwargs):
-        """
-        Guess the device type of host, based on Netmiko
-        """
+        """Guess the device type of host, based on Netmiko."""
         guessed_device_type = None
 
         remote_device = {
@@ -131,31 +133,29 @@ class NetdevKeeper:
         }
 
         try:
-            logging.info("INFO guessing device type: {}".format(str(kwargs.get("host"))))
+            logging.info("INFO guessing device type: %s", kwargs.get("host"))
             guesser = SSHDetect(**remote_device)
             guessed_device_type = guesser.autodetect()
-            logging.info("INFO guessed device type: {}".format(str(guessed_device_type)))
+            logging.info("INFO guessed device type: %s", guessed_device_type)
 
         except NetMikoAuthenticationException as err:
-            logging.error("ERROR {}".format(str(err)))
+            logging.error("ERROR %s", err)
             raise OnboardException(reason="fail-login", message="ERROR {}".format(str(err)))
 
         except (NetMikoTimeoutException, SSHException) as err:
-            logging.error("ERROR {}".format(str(err)))
+            logging.error("ERROR %s", err)
             raise OnboardException(reason="fail-connect", message="ERROR {}".format(str(err)))
 
         except Exception as err:
-            logging.error("ERROR {}".format(str(err)))
+            logging.error("ERROR %s", err)
             raise OnboardException(reason="fail-general", message="ERROR {}".format(str(err)))
 
-        logging.info("INFO device type is {}".format(str(guessed_device_type)))
+        logging.info("INFO device type is %s", guessed_device_type)
 
         return guessed_device_type
 
     def get_platform_name(self):
-        """
-        Get platform name in netmiko format (ie cisco_ios, cisco_xr etc)
-        """
+        """Get platform name in netmiko format (ie cisco_ios, cisco_xr etc)."""
         if self.ot.platform:
             platform_name = self.ot.platform.name
         else:
@@ -163,23 +163,22 @@ class NetdevKeeper:
                 host=self.ot.ip_address, username=self.username, password=self.password
             )
 
-        logging.info(f"PLATFORM NAME is {platform_name}")
+        logging.info("PLATFORM NAME is %s", platform_name)
 
         return platform_name
 
     @staticmethod
     def get_platform_object_from_netbox(platform_name):
-        """
-        Get platform object from NetBox filtered by platform_name
+        """Get platform object from NetBox filtered by platform_name.
 
         Lookup is performed based on the object's slug field (not the name field)
         """
         try:
             platform_object = Platform.objects.get(slug=platform_name)
-            logging.info(f"PLATFORM: found in NetBox {platform_name}")
+            logging.info("PLATFORM: found in NetBox %s", platform_name)
         except Platform.DoesNotExist:
 
-            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_platform_if_missing"):
+            if not PLUGIN_SETTINGS["create_platform_if_missing"]:
                 raise OnboardException(
                     reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_name}"
                 )
@@ -293,14 +292,20 @@ class NetboxKeeper:
 
         self.manufacturer = None
         self.device_type = None
-        self.device_role = None
         self.device = None
         self.interface = None
         self.primary_ip = None
 
-    def ensure_device_type(self):
+    def ensure_device_type(
+        self,
+        create_manufacturer=PLUGIN_SETTINGS["create_manufacturer_if_missing"],
+        create_device_type=PLUGIN_SETTINGS["create_device_type_if_missing"],
+    ):
         """Ensure the Device Type (slug) exists in NetBox associated to the netdev "model" and "vendor" (manufacturer).
 
+        Args:
+          create_manufacturer (bool) :Flag to indicate if we need to create the manufacturer, if not already present
+          create_device_type (bool): Flag to indicate if we need to create the device_type, if not already present
         Raises:
           OnboardException('fail-config'):
             When the device vendor value does not exist as a Manufacturer in
@@ -318,7 +323,7 @@ class NetboxKeeper:
         try:
             self.manufacturer = Manufacturer.objects.get(name=self.netdev.vendor)
         except Manufacturer.DoesNotExist:
-            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_manufacturer_if_missing"):
+            if not create_manufacturer:
                 raise OnboardException(
                     reason="fail-config", message=f"ERROR manufacturer not found: {self.netdev.vendor}"
                 )
@@ -339,7 +344,7 @@ class NetboxKeeper:
         try:
             self.device_type = DeviceType.objects.get(slug=self.netdev.model)
         except DeviceType.DoesNotExist:
-            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_device_type_if_missing"):
+            if not create_device_type:
                 raise OnboardException(
                     reason="fail-config", message=f"ERROR device type not found: {self.netdev.model}"
                 )
@@ -357,30 +362,41 @@ class NetboxKeeper:
                 message=f"ERROR device type {self.netdev.model}" f"already exists for vendor {self.netdev.vendor}",
             )
 
-    def ensure_device_role(self):
-        """Ensure that the device role is defined / exist in NetBox or create it if it doesn't exist"""
+    def ensure_device_role(
+        self,
+        create_device_role=PLUGIN_SETTINGS["create_device_role_if_missing"],
+        default_device_role=PLUGIN_SETTINGS["default_device_role"],
+    ):
+        """Ensure that the device role is defined / exist in NetBox or create it if it doesn't exist.
 
+        Args:
+          create_device_role (bool) :Flag to indicate if we need to create the device_role, if not already present
+          default_device_role (str): Default value for the device_role, if we need to create it
+        Raises:
+          OnboardException('fail-config'):
+            When the device role value does not exist
+            NetBox.
+        """
         if self.netdev.ot.role:
             return
-
-        default_device_role = settings.PLUGINS_CONFIG["netbox_onboarding"].get("default_device_role")
 
         try:
             device_role = DeviceRole.objects.get(slug=default_device_role)
         except DeviceRole.DoesNotExist:
-            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_device_role_if_missing"):
+            if not create_device_role:
                 raise OnboardException(
                     reason="fail-config", message=f"ERROR device role not found: {default_device_role}"
                 )
 
-            self.netdev.ot.role = DeviceRole.objects.create(name=default_device_role, slug=default_device_role)
-            self.netdev.ot.role.save()
-            self.netdev.ot.save()
-            return
+            device_role = DeviceRole.objects.create(name=default_device_role, slug=default_device_role)
+            device_role.save()
+
+        self.netdev.ot.role = device_role
+        self.netdev.ot.save()
+        return
 
     def ensure_device_instance(self):
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE."""
-
         device, _ = Device.objects.get_or_create(
             name=self.netdev.hostname,
             device_type=self.device_type,
@@ -419,21 +435,7 @@ class NetboxKeeper:
         self.device.save()
 
     def ensure_device(self):
-        """Ensure that the device represented by the dev_info data exists in the NetBox system.
-
-        This means the following is true:
-
-            1. The device 'hostname' exists and is a member of 'site'
-            2. The 'serial_number' is assigned to the device
-            3. The 'model' is an existing DevType and assigned to the device.
-            4. The 'mgmt_ifname' exists as an interface of the device
-            5. The 'mgmt_ipaddr' is assigned to the mgmt_ifname
-            6. The 'mgmt_ipaddr' is assigned as the primary IP address to the device.
-
-        If the device previously exists and is not a member of the give site, then raise
-        an OnboardException.
-
-        """
+        """Ensure that the device represented by the DevNetKeeper exists in the NetBox system."""
         self.ensure_device_type()
         self.ensure_device_role()
         self.ensure_device_instance()

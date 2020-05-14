@@ -1,3 +1,4 @@
+"""Constants for netbox_onboarding plugin."""
 NETMIKO_TO_NAPALM = {
     "cisco_ios": "ios",
     "cisco_nxos": "nxos",
