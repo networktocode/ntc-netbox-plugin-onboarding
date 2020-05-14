@@ -1,4 +1,5 @@
-"""
+"""Tables for device onboarding tasks.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,17 +17,21 @@ from .models import OnboardingTask
 
 
 class OnboardingTaskTable(BaseTable):
+    """Table for displaying OnboardingTask instances."""
+
     site = tables.LinkColumn()
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = ("pk", "created_on", "ip_address", "site", "platform", "device", "status", "failed_reason", "message")
 
 
 class OnboardingTaskFeedBulkTable(BaseTable):
+    """TODO document me."""
+
     site = tables.LinkColumn()
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = (
             "id",

@@ -1,4 +1,5 @@
-"""
+"""ChoiceSet classes for device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@ from utilities.choices import ChoiceSet
 
 
 class OnboardingStatusChoices(ChoiceSet):
+    """Valid values for OnboardingTask "status"."""
 
     STATUS_FAILED = "failed"
     STATUS_PENDING = "pending"
@@ -30,6 +32,7 @@ class OnboardingStatusChoices(ChoiceSet):
 
 
 class OnboardingFailChoices(ChoiceSet):
+    """Valid values for OnboardingTask "failed reason"."""
 
     FAIL_LOGIN = "fail-login"
     FAIL_CONFIG = "fail-config"

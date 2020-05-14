@@ -1,4 +1,5 @@
-"""
+"""Filtering logic for OnboardingTask instances.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,16 +13,16 @@ limitations under the License.
 """
 
 import django_filters
-from rest_framework.exceptions import ValidationError
-from dcim.models import Site, Device, DeviceRole, Platform
 from django.db.models import Q
 
-from utilities.filters import NameSlugSearchFilterSet, TagFilter
+from dcim.models import Site, DeviceRole, Platform
+from utilities.filters import NameSlugSearchFilterSet
 
 from .models import OnboardingTask
 
 
 class OnboardingTaskFilter(NameSlugSearchFilterSet):
+    """Filter capabilities for OnboardingTask instances."""
 
     q = django_filters.CharFilter(method="search", label="Search",)
 
@@ -41,11 +42,12 @@ class OnboardingTaskFilter(NameSlugSearchFilterSet):
         field_name="role__slug", queryset=DeviceRole.objects.all(), to_field_name="slug", label="Device Role (slug)",
     )
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = ["id", "site", "site_id", "platform", "role", "status", "failed_reason"]
 
     def search(self, queryset, name, value):
+        """Perform the filtered search."""
         if not value.strip():
             return queryset
         qs_filter = (

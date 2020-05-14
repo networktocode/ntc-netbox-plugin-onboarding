@@ -1,4 +1,5 @@
-"""
+"""Django views for device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,19 +18,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import render
 from django_rq import get_queue
-from ipam.models import Prefix
-from utilities.views import (
-    BulkCreateView,
-    BulkDeleteView,
-    BulkEditView,
-    BulkImportView,
-    ObjectDeleteView,
-    ObjectEditView,
-    ObjectListView,
-)
+from utilities.views import BulkImportView, ObjectListView
 
 from netbox_onboarding.utils.credentials import Credentials
-from .choices import OnboardingStatusChoices
 from .filters import OnboardingTaskFilter
 from .forms import OnboardingTaskFilterForm, OnboardingTaskFeedCSVForm
 from .models import OnboardingTask
@@ -40,6 +31,8 @@ log.setLevel(logging.DEBUG)
 
 
 class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
+    """View for listing all extant OnboardingTasks."""
+
     permission_required = "dcim.view_device"
     queryset = OnboardingTask.objects.all().order_by("-id")
     filter = OnboardingTaskFilter
@@ -49,7 +42,10 @@ class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
 
 
 class OnboardingTaskBulkImportView(BulkImportView):
+    """View for bulk-importing a CSV file to create OnboardingTasks."""
+
     def post(self, request):
+        """Process an HTTP POST request."""
         new_objs = []
         form = self._import_form(request.POST)
 
@@ -58,7 +54,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
                 # Iterate through CSV data and bind each row to a new model form instance.
                 with transaction.atomic():
                     for row, data in enumerate(form.cleaned_data["csv"], start=1):
-                        obj_form = self.model_form(data)
+                        obj_form = self.model_form(data)  # pylint:disable=not-callable
                         if obj_form.is_valid():
                             obj = self._save_obj(obj_form, request)
                             new_objs.append(obj)
@@ -68,11 +64,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
                             raise ValidationError("")
 
                 for ot in new_objs:
-                    username = ot.username
-                    password = ot.password
-                    secret = ot.secret
-
-                    credentials = Credentials(username=username, password=password, secret=secret,)
+                    credentials = Credentials(username=ot.username, password=ot.password, secret=ot.secret,)
 
                     ot.username = ""
                     ot.password = ""
@@ -85,7 +77,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
                     webhook_queue.enqueue("netbox_onboarding.worker.onboard_device", ot.pk, credentials)
 
                 # Compile a table containing the imported objects
-                obj_table = self.table(new_objs)
+                obj_table = self.table(new_objs)  # pylint:disable=not-callable
 
                 if new_objs:
                     msg = "Imported {} {}".format(len(new_objs), new_objs[0]._meta.verbose_name_plural)
@@ -105,7 +97,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
             self.template_name,
             {
                 "form": form,
-                "fields": self.model_form().fields,
+                "fields": self.model_form().fields,  # pylint:disable=not-callable
                 "obj_type": self.model_form._meta.model._meta.verbose_name,
                 "return_url": self.get_return_url(request),
             },
@@ -113,6 +105,8 @@ class OnboardingTaskBulkImportView(BulkImportView):
 
 
 class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, OnboardingTaskBulkImportView):
+    """View for bulk-importing a CSV file to create OnboardingTasks."""
+
     permission_required = "dcim.view_device"
     model_form = OnboardingTaskFeedCSVForm
     table = OnboardingTaskFeedBulkTable

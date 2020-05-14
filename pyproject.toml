@@ -14,12 +14,12 @@ first = "^2.0.2"
 napalm = "^2.5.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^4.6"
 black = "^19.10b0"
 yamllint = "^1.23.0"
 bandit = "^1.6.2"
 pylint = "^2.5.2"
 pylint-django = "^2.0.15"
+pydocstyle = "^5.0.2"
 
 [tool.black]
 line-length = 120

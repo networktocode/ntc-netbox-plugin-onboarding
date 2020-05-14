@@ -1,4 +1,5 @@
-"""
+"""Django REST Framework API views for device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@ limitations under the License.
 # from drf_yasg.openapi import Parameter, TYPE_STRING
 # from drf_yasg.utils import swagger_auto_schema
 
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 
 # from rest_framework.decorators import action
 # from rest_framework.response import Response
@@ -30,7 +31,18 @@ from netbox_onboarding.filters import OnboardingTaskFilter
 from .serializers import OnboardingTaskSerializer
 
 
-class OnboardingTaskView(viewsets.ModelViewSet):
+class OnboardingTaskView(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Create, check status of, and delete onboarding tasks.
+
+    In-place updates (PUT, PATCH) of tasks are not permitted.
+    """
+
     queryset = OnboardingTask.objects.all()
     filterset_class = OnboardingTaskFilter
     serializer_class = OnboardingTaskSerializer

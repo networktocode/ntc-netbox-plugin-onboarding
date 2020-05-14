@@ -1,4 +1,5 @@
-"""
+"""Model serializers for the netbox_onboarding REST API.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -11,19 +12,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import re
-from ipaddress import ip_address
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from django_rq import get_queue
 
-from dcim.models import Device, Interface, InventoryItem, Site, DeviceRole, Platform
+from dcim.models import Site, DeviceRole, Platform
 
 from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.utils.credentials import Credentials
 
 
 class OnboardingTaskSerializer(serializers.ModelSerializer):
+    """Serializer for the OnboardingTask model."""
+
     device = serializers.CharField(required=False, help_text="Planned device name",)
 
     ip_address = serializers.CharField(required=True, help_text="IP Address to reach device",)
@@ -38,9 +38,9 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         many=False,
         read_only=False,
         queryset=Site.objects.all(),
-        slug_field="name",
+        slug_field="slug",
         required=True,
-        help_text="Short form site code - name",
+        help_text="NetBox site 'slug' value",
     )
 
     role = serializers.SlugRelatedField(
@@ -49,7 +49,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         queryset=DeviceRole.objects.all(),
         slug_field="slug",
         required=False,
-        help_text="NetBox device role 'name' value",
+        help_text="NetBox device role 'slug' value",
     )
 
     device_type = serializers.CharField(required=False, help_text="NetBox device type 'slug' value",)
@@ -63,17 +63,17 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         help_text="NetBox Platform 'slug' value",
     )
 
-    status = serializers.CharField(required=False, help_text="Onboading Status")
+    status = serializers.CharField(required=False, help_text="Onboarding Status")
 
     failed_raison = serializers.CharField(required=False, help_text="Failure reason")
 
-    message = serializers.CharField(required=False, help_text="NetBox Platform 'slug' value")
+    message = serializers.CharField(required=False, help_text="Status message")
 
     port = serializers.IntegerField(required=False, help_text="Device PORT to check for online")
 
     timeout = serializers.IntegerField(required=False, help_text="Timeout (sec) for device connect")
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = [
             "id",
@@ -94,6 +94,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        """Create an OnboardingTask and enqueue it for processing."""
         # Fields are string-type so default to empty (instead of None)
         username = validated_data.pop("username", "")
         password = validated_data.pop("password", "")

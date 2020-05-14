@@ -1,4 +1,5 @@
-"""
+"""Plugin declaration for netbox_onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +18,8 @@ from extras.plugins import PluginConfig
 
 
 class OnboardingConfig(PluginConfig):
+    """Plugin configuration for the netbox_onboarding plugin."""
+
     name = "netbox_onboarding"
     verbose_name = "Plugin for Easy Device Onboarding"
     version = "1.0.0"
@@ -28,4 +31,4 @@ class OnboardingConfig(PluginConfig):
     caching_config = {}
 
 
-config = OnboardingConfig
+config = OnboardingConfig  # pylint:disable=invalid-name

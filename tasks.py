@@ -1,4 +1,5 @@
-"""
+"""Tasks for use with Invoke.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,7 +38,7 @@ def build(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
         netbox_ver (str): NetBox version to use to build the container
         python_ver (str): Will use the Python version docker image to build from
     """
-    result = context.run(
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} build --build-arg netbox_ver={netbox_ver} --build-arg python_ver={python_ver}",
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
@@ -49,9 +50,8 @@ def build(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 @task
 def debug(context):
     """Start NetBox and its dependencies in debug mode."""
-
-    print(f"Starting Netbox .. ")
-    result = context.run(
+    print("Starting Netbox .. ")
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
@@ -60,9 +60,8 @@ def debug(context):
 @task
 def start(context):
     """Start NetBox and its dependencies in detached mode."""
-
-    print(f"Starting Netbox in detached mode.. ")
-    result = context.run(
+    print("Starting Netbox in detached mode.. ")
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
@@ -71,9 +70,8 @@ def start(context):
 @task
 def stop(context):
     """Stop NetBox and its dependencies."""
-
-    print(f"Stopping Netbox .. ")
-    result = context.run(
+    print("Stopping Netbox .. ")
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
@@ -82,12 +80,11 @@ def stop(context):
 @task
 def destroy(context):
     """Destroy all containers and volumes."""
-
-    result = context.run(
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
-    result = context.run(
+    context.run(
         f"docker volume rm -f {BUILD_NAME}_pgdata_netbox_onboarding",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
@@ -99,8 +96,7 @@ def destroy(context):
 @task
 def nbshell(context):
     """Launch a nbshell session."""
-
-    result = context.run(
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py nbshell",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
         pty=True,
@@ -110,8 +106,7 @@ def nbshell(context):
 @task
 def cli(context):
     """Launch a bash shell inside the running NetBox container."""
-
-    result = context.run(
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox bash",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
         pty=True,
@@ -120,9 +115,8 @@ def cli(context):
 
 @task
 def create_user(context, user="admin"):
-    """Create a new user in django (default: admin), will prompt for password"""
-
-    result = context.run(
+    """Create a new user in django (default: admin), will prompt for password."""
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py createsuperuser --username {user}",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
         pty=True,
@@ -131,19 +125,18 @@ def create_user(context, user="admin"):
 
 @task
 def makemigrations(context):
-    """Run Make Migration in Django"""
-
-    result = context.run(
+    """Run Make Migration in Django."""
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d postgres",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
 
-    result = context.run(
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py makemigrations",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
 
-    result = context.run(
+    context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
         env={"NETBOX_VER": NETBOX_VER, "PYTHON_VER": PYTHON_VER},
     )
@@ -152,114 +145,89 @@ def makemigrations(context):
 # ------------------------------------------------------------------------------
 # TESTS / LINTING
 # ------------------------------------------------------------------------------
-# @task
-# def pytest(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run pytest for the specified name and Python version.
+@task
+def unittest(context):
+    """Run Django unit tests for the plugin.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     # pty is set to true to properly run the docker commands due to the invocation process of docker
-#     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-#     # Install python module
-#     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-#     context.run(f"{DOCKER} /bin/bash -c 'poetry install && pytest -vv'", pty=True)
+    Args:
+        context (obj): Used to run specific commands
+    """
+    docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
+    context.run(f'{docker} sh -c "python manage.py test netbox_onboarding"', pty=True)
 
 
-# @task
-# def pylint(context, name=NAME, python_ver=PYTHON_VER):
-#     """Run pytest for the specified name and Python version.
+@task
+def pylint(context):
+    """Run pylint code analysis.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     DOCKER = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
-#     context.run(f"{DOCKER} sh -c \"cd /source && find . -name '*.py' | PYTHONPATH=/opt/netbox/netbox xargs pylint --load-plugins pylint_django --persistent=n\"", pty=True)
-
-
-# @task
-# def black(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run black to check that Python files adherence to black standards.
-
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     # pty is set to true to properly run the docker commands due to the invocation process of docker
-#     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-#     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-#     context.run(f"{DOCKER} black --check --diff .", pty=True)
+    Args:
+        context (obj): Used to run specific commands
+    """
+    docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
+    # We exclude the /migrations/ directory since it is autogenerated code
+    context.run(
+        f"{docker} sh -c \"cd /source && find . -name '*.py' -not -path '*/migrations/*' | "
+        'PYTHONPATH=/opt/netbox/netbox xargs pylint"',
+        pty=True,
+    )
 
 
-# @task
-# def pylama(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run pylama for the specified name and Python version.
+@task
+def black(context):
+    """Run black to check that Python files adhere to its style standards.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     # pty is set to true to properly run the docker commands due to the invocation process of docker
-#     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-#     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-#     context.run(f"{DOCKER} pylama .", pty=True)
+    Args:
+        context (obj): Used to run specific commands
+    """
+    docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
+    context.run(f'{docker} sh -c "cd /source && black --check --diff ."', pty=True)
 
 
-# @task
-# def pydocstyle(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run pydocstyle to validate docstring formatting adheres to NTC defined standards.
+@task
+def pydocstyle(context):
+    """Run pydocstyle to validate docstring formatting adheres to NTC defined standards.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     # pty is set to true to properly run the docker commands due to the invocation process of docker
-#     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-#     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-#     context.run(f"{DOCKER} pydocstyle .", pty=True)
+    Args:
+        context (obj): Used to run specific commands
+    """
+    docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
+    # We exclude the /migrations/ directory since it is autogenerated code
+    context.run(
+        f"{docker} sh -c \"cd /source && find . -name '*.py' -not -path '*/migrations/*' | xargs pydocstyle\"",
+        pty=True,
+    )
 
 
-# @task
-# def bandit(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run bandit to validate basic static code security analysis.
+@task
+def bandit(context):
+    """Run bandit to validate basic static code security analysis.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     # pty is set to true to properly run the docker commands due to the invocation process of docker
-#     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-#     DOCKER = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-#     context.run(f"{DOCKER} bandit --recursive ./ --configfile .bandit.yml", pty=True)
+    Args:
+        context (obj): Used to run specific commands
+    """
+    docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
+    context.run(f'{docker} sh -c "cd /source && bandit --recursive ./"', pty=True)
 
-# @task
-# def tests(context, name=NAME, python_ver=PYTHON_VER):
-#     """This will run all tests for the specified name and Python version.
 
-#     Args:
-#         context (obj): Used to run specific commands
-#         name (str): Used to name the docker image
-#         python_ver (str): Will use the Python version docker image to build from
-#     """
-#     print("Running pytest...")
-#     pytest(context, NAME, python_ver)
-#     print("Running black...")
-#     black(context, NAME, python_ver)
-#     print("Running pylama...")
-#     pylama(context, NAME, python_ver)
-#     print("Running yamllint...")
-#     yamllint(context, NAME, python_ver)
-#     print("Running pydocstyle...")
-#     pydocstyle(context, NAME, python_ver)
-#     print("Running bandit...")
-#     bandit(context, NAME, python_ver)
+@task
+def tests(context):
+    """Run all tests for this plugin.
 
-#     print("All tests have passed!")
+    Args:
+         context (obj): Used to run specific commands
+    """
+    # Sorted loosely from fastest to slowest
+    print("Running black...")
+    black(context)
+    print("Running bandit...")
+    bandit(context)
+    print("Running pydocstyle...")
+    pydocstyle(context)
+    print("Running pylint...")
+    pylint(context)
+    print("Running unit tests...")
+    unittest(context)
+    # print("Running yamllint...")
+    # yamllint(context, NAME, python_ver)
+
+    print("All tests have passed!")

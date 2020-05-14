@@ -18,3 +18,4 @@ before_script:
 
 script:
   - invoke build --python-ver $TRAVIS_PYTHON_VERSION
+  - invoke tests

@@ -1,4 +1,5 @@
-"""
+"""Plugin additions to the NetBox navigation menu.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,7 +13,6 @@ limitations under the License.
 """
 
 from extras.plugins import PluginMenuButton, PluginMenuItem
-from utilities.choices import ButtonColorChoices
 
 menu_items = (
     PluginMenuItem(

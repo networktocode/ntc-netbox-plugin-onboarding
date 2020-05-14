@@ -1,4 +1,5 @@
-"""
+"""Forms for network device onboarding.
+
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +16,7 @@ from django import forms
 
 from utilities.forms import BootstrapMixin
 from dcim.models import Site, Platform, DeviceRole
-from extras.forms import CustomFieldModelCSVForm, CustomFieldFilterForm
+from extras.forms import CustomFieldModelCSVForm
 
 from .models import OnboardingTask
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
@@ -24,6 +25,8 @@ BLANK_CHOICE = (("", "---------"),)
 
 
 class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
+    """Form for filtering OnboardingTask instances."""
+
     site = forms.ModelChoiceField(queryset=Site.objects.all(), required=False, to_field_name="slug")
 
     platform = forms.ModelChoiceField(queryset=Platform.objects.all(), required=False, to_field_name="slug")
@@ -36,12 +39,14 @@ class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
 
     q = forms.CharField(required=False, label="Search")
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = ["q", "site", "platform", "status", "failed_reason"]
 
 
 class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
+    """TODO document me."""
+
     site = forms.ModelChoiceField(
         queryset=Site.objects.all(),
         required=True,
@@ -72,6 +77,6 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
         error_messages={"invalid_choice": "DeviceRole not found",},
     )
 
-    class Meta:
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = OnboardingTask.csv_headers
