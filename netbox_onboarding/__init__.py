@@ -27,7 +27,13 @@ class OnboardingConfig(PluginConfig):
     description = ""
     base_url = "onboarding"
     required_settings = []
-    default_settings = {}
+    default_settings = {
+        "create_platform_if_missing": True,
+        "create_manufacturer_if_missing": True,
+        "create_device_type_if_missing": True,
+        "create_device_role_if_missing": True,
+        "default_device_role": "network",
+    }
     caching_config = {}
 
 

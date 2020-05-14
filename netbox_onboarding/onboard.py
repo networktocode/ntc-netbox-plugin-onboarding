@@ -16,12 +16,16 @@ import logging
 import os
 import re
 import socket
+
 from first import first
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
 
-from dcim.models import Manufacturer, Device, Interface, DeviceType
+from django.conf import settings
+from dcim.models import Manufacturer, Device, Interface, DeviceType, Platform, DeviceRole
 from ipam.models import IPAddress
+
+from .constants import NETMIKO_TO_NAPALM
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
 from netmiko.ssh_exception import NetMikoTimeoutException
@@ -120,34 +124,29 @@ class NetdevKeeper:
         guessed_device_type = None
 
         remote_device = {
-            'device_type': 'autodetect',
-            'host': kwargs.get('host'),
-            'username': kwargs.get('username'),
-            'password': kwargs.get('password'),
+            "device_type": "autodetect",
+            "host": kwargs.get("host"),
+            "username": kwargs.get("username"),
+            "password": kwargs.get("password"),
         }
 
         try:
-            logging.info(
-                "INFO guessing device type: {}".format(str(kwargs.get('host'))))
+            logging.info("INFO guessing device type: {}".format(str(kwargs.get("host"))))
             guesser = SSHDetect(**remote_device)
             guessed_device_type = guesser.autodetect()
-            logging.info(
-                "INFO guessed device type: {}".format(str(guessed_device_type)))
+            logging.info("INFO guessed device type: {}".format(str(guessed_device_type)))
 
         except NetMikoAuthenticationException as err:
             logging.error("ERROR {}".format(str(err)))
-            raise OnboardException(reason="fail-login",
-                                   message="ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-login", message="ERROR {}".format(str(err)))
 
         except (NetMikoTimeoutException, SSHException) as err:
             logging.error("ERROR {}".format(str(err)))
-            raise OnboardException(reason="fail-connect",
-                                   message="ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-connect", message="ERROR {}".format(str(err)))
 
         except Exception as err:
             logging.error("ERROR {}".format(str(err)))
-            raise OnboardException(reason="fail-general",
-                                   message="ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-general", message="ERROR {}".format(str(err)))
 
         logging.info("INFO device type is {}".format(str(guessed_device_type)))
 
@@ -161,9 +160,7 @@ class NetdevKeeper:
             platform_name = self.ot.platform.name
         else:
             platform_name = self.guess_netmiko_device_type(
-                host=self.ot.ip_address,
-                username=self.username,
-                password=self.password
+                host=self.ot.ip_address, username=self.username, password=self.password
             )
 
         logging.info(f"PLATFORM NAME is {platform_name}")
@@ -178,14 +175,25 @@ class NetdevKeeper:
         Lookup is performed based on the object's slug field (not the name field)
         """
         try:
-            platform_object = Platform.objects.get(
-                slug=platform_name)
+            platform_object = Platform.objects.get(slug=platform_name)
             logging.info(f"PLATFORM: found in NetBox {platform_name}")
         except Platform.DoesNotExist:
-            raise OnboardException(
-                reason='fail-general',
-                message=f"ERROR platform not found in NetBox: {platform_name}"
+
+            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_platform_if_missing"):
+                raise OnboardException(
+                    reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_name}"
+                )
+
+            if platform_name not in NETMIKO_TO_NAPALM.keys():
+                raise OnboardException(
+                    reason="fail-general",
+                    message=f"ERROR platform not found in NetBox and it's not part eligible to auto-creation: {platform_name}  ",
+                )
+
+            platform_object = Platform.objects.create(
+                name=platform_name, slug=platform_name, napalm_driver=NETMIKO_TO_NAPALM[platform_name]
             )
+            platform_object.save()
 
         return platform_object
 
@@ -209,14 +217,14 @@ class NetdevKeeper:
 
         try:
             platform_name = self.get_platform_name()
-
             platform_object = self.get_platform_object_from_netbox(platform_name=platform_name)
 
             driver_name = platform_object.napalm_driver
 
             if not driver_name:
-                raise OnboardException(reason='fail-general',
-                                       message=f"Onboarding for platform {platform_name} not supported")
+                raise OnboardException(
+                    reason="fail-general", message=f"Onboarding for platform {platform_name} not supported"
+                )
 
             driver = get_network_driver(driver_name)
             dev = driver(hostname=mgmt_ipaddr, username=self.username, password=self.password, timeout=self.ot.timeout)
@@ -283,8 +291,6 @@ class NetboxKeeper:
         # these attributes are netbox model instances as discovered/created
         # through the course of processing.
 
-        self.site = None
-        self.platform = None
         self.manufacturer = None
         self.device_type = None
         self.device_role = None
@@ -312,10 +318,17 @@ class NetboxKeeper:
         try:
             self.manufacturer = Manufacturer.objects.get(name=self.netdev.vendor)
         except Manufacturer.DoesNotExist:
-            raise OnboardException(reason="fail-config", message=f"ERROR manufacturer not found: {self.netdev.vendor}")
+            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_manufacturer_if_missing"):
+                raise OnboardException(
+                    reason="fail-config", message=f"ERROR manufacturer not found: {self.netdev.vendor}"
+                )
 
-        # Now see if the device type (slug) already exists, and if so check to make
-        # sure that it is not assigned as a different manufacturer
+            self.manufacturer = Manufacturer.objects.create(name=self.netdev.vendor, slug=self.netdev.vendor)
+            self.manufacturer.save()
+
+        # Now see if the device type (slug) already exists,
+        #  if so check to make sure that it is not assigned as a different manufacturer
+        # if it doesn't exist, create it if the flag 'create_device_type_if_missing' is defined
 
         slug = self.netdev.model
         if re.search(r"[^a-zA-Z0-9\-_]+", slug):
@@ -326,30 +339,49 @@ class NetboxKeeper:
         try:
             self.device_type = DeviceType.objects.get(slug=self.netdev.model)
         except DeviceType.DoesNotExist:
-            logging.info("device-type does not exist yet")
+            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_device_type_if_missing"):
+                raise OnboardException(
+                    reason="fail-config", message=f"ERROR device type not found: {self.netdev.model}"
+                )
 
-        if self.device_type:
-            if self.device_type.manufacturer.id == self.manufacturer.id:
-                logging.info("EXISTS: device-type: %s", self.netdev.model)
-                return
+            logging.info("CREATE: device-type: %s", self.netdev.model)
+            self.device_type = DeviceType.objects.create(
+                slug=self.netdev.model, model=self.netdev.model.upper(), manufacturer=self.manufacturer
+            )
+            self.device_type.save()
+            return
 
+        if self.device_type.manufacturer.id != self.manufacturer.id:
             raise OnboardException(
                 reason="fail-config",
                 message=f"ERROR device type {self.netdev.model}" f"already exists for vendor {self.netdev.vendor}",
             )
 
-        # At this point create and return the new netbox device-type instance.from
-        logging.info("CREATE: device-type: %s", self.netdev.model)
+    def ensure_device_role(self):
+        """Ensure that the device role is defined / exist in NetBox or create it if it doesn't exist"""
 
-        self.device_type = DeviceType.objects.create(
-            slug=self.netdev.model, model=self.netdev.model.upper(), manufacturer=self.manufacturer
-        )
+        if self.netdev.ot.role:
+            return
 
-        self.device_type.save()
+        default_device_role = settings.PLUGINS_CONFIG["netbox_onboarding"].get("default_device_role")
+
+        try:
+            device_role = DeviceRole.objects.get(slug=default_device_role)
+        except DeviceRole.DoesNotExist:
+            if not settings.PLUGINS_CONFIG["netbox_onboarding"].get("create_device_role_if_missing"):
+                raise OnboardException(
+                    reason="fail-config", message=f"ERROR device role not found: {default_device_role}"
+                )
+
+            self.netdev.ot.role = DeviceRole.objects.create(name=default_device_role, slug=default_device_role)
+            self.netdev.ot.role.save()
+            self.netdev.ot.save()
+            return
 
     def ensure_device_instance(self):
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE."""
-        self.device, _ = Device.objects.get_or_create(
+
+        device, _ = Device.objects.get_or_create(
             name=self.netdev.hostname,
             device_type=self.device_type,
             device_role=self.netdev.ot.role,
@@ -357,8 +389,13 @@ class NetboxKeeper:
             site=self.netdev.ot.site,
         )
 
-        self.device.serial = self.netdev.serial_number
-        self.device.save()
+        device.serial = self.netdev.serial_number
+        device.save()
+
+        self.netdev.ot.device = device
+        self.netdev.ot.save()
+
+        self.device = device
 
     def ensure_interface(self):
         """Ensure that the interface associated with the mgmt_ipaddr exists and is assigned to the device."""
@@ -369,9 +406,7 @@ class NetboxKeeper:
         mgmt_ipaddr = self.netdev.ot.ip_address
 
         # see if the primary IP address exists in IPAM
-        self.primary_ip, created = IPAddress.objects.get_or_create(
-            address=f"{mgmt_ipaddr}/{self.netdev.mgmt_pflen}", family=4
-        )
+        self.primary_ip, created = IPAddress.objects.get_or_create(address=f"{mgmt_ipaddr}/{self.netdev.mgmt_pflen}")
 
         if created or not self.primary_ip.interface:
             logging.info("ASSIGN: IP address %s to %s", self.primary_ip.address, self.interface.name)
@@ -400,6 +435,7 @@ class NetboxKeeper:
 
         """
         self.ensure_device_type()
+        self.ensure_device_role()
         self.ensure_device_instance()
         self.ensure_interface()
         self.ensure_primary_ip()
