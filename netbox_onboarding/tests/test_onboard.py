@@ -13,7 +13,8 @@ limitations under the License.
 """
 from django.test import TestCase
 
-from dcim.models import Site, Manufacturer, DeviceType
+from dcim.models import Site, Device, Interface, Manufacturer, DeviceType, DeviceRole, Platform
+from ipam.models import IPAddress
 
 from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.onboard import NetboxKeeper, NetdevKeeper, OnboardException
@@ -29,10 +30,17 @@ class NetboxKeeperTestCase(TestCase):
         # self.platform1 = Platform.objects.create(name="NXOS", slug="nxos")
 
         self.manufacturer1 = Manufacturer.objects.create(name="juniper", slug="juniper")
+        self.platform1 = Platform.objects.create(name="junos", slug="junos")
         self.device_type1 = DeviceType.objects.create(slug="srx3600", model="SRX3600", manufacturer=self.manufacturer1)
+        self.device_role1 = DeviceRole.objects.create(name="firewall", slug="firewall")
 
         self.onboarding_task1 = OnboardingTask.objects.create(ip_address="10.10.10.10", site=self.site1)
-        self.onboarding_task2 = OnboardingTask.objects.create(ip_address="192.168.1.1", site=self.site1)
+        self.onboarding_task2 = OnboardingTask.objects.create(
+            ip_address="192.168.1.1", site=self.site1, role=self.device_role1
+        )
+        self.onboarding_task3 = OnboardingTask.objects.create(
+            ip_address="192.168.1.2", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
 
         self.ndk1 = NetdevKeeper(self.onboarding_task1)
         self.ndk1.hostname = "device1"
@@ -59,8 +67,8 @@ class NetboxKeeperTestCase(TestCase):
             nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
 
         nbk.ensure_device_type(create_manufacturer=True, create_device_type=True)
-        self.assertEqual(isinstance(nbk.manufacturer, Manufacturer), True)
-        self.assertEqual(isinstance(nbk.device_type, DeviceType), True)
+        self.assertTrue(isinstance(nbk.manufacturer, Manufacturer))
+        self.assertTrue(isinstance(nbk.device_type, DeviceType))
 
     def test_ensure_device_type_present(self):
         """Verify ensure_device_type function when Manufacturer and DeviceType object are already present."""
@@ -69,3 +77,76 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
         self.assertEqual(nbk.manufacturer, self.manufacturer1)
         self.assertEqual(nbk.device_type, self.device_type1)
+
+    def test_ensure_device_role_not_exist(self):
+        """Verify ensure_device_role function when DeviceRole do not already exist."""
+        nbk = NetboxKeeper(self.ndk1)
+
+        ## Find how to assert better which exception is catched
+        with self.assertRaises(OnboardException):
+            nbk.ensure_device_role(create_device_role=False, default_device_role="mytestrole")
+
+        nbk.ensure_device_role(create_device_role=True, default_device_role="mytestrole")
+        self.assertTrue(isinstance(nbk.netdev.ot.role, DeviceRole))
+        self.assertEqual(nbk.netdev.ot.role.slug, "mytestrole")
+
+    def test_ensure_device_role_exist(self):
+        """Verify ensure_device_role function when DeviceRole exist but is not assigned to the OT."""
+        nbk = NetboxKeeper(self.ndk1)
+
+        nbk.ensure_device_role(create_device_role=True, default_device_role="firewall")
+        self.assertEqual(nbk.netdev.ot.role, self.device_role1)
+
+    def test_ensure_device_role_exist(self):
+        """Verify ensure_device_role function when DeviceRole exist and is already assigned."""
+        nbk = NetboxKeeper(self.ndk2)
+
+        nbk.ensure_device_role(create_device_role=True, default_device_role="firewall")
+        self.assertEqual(nbk.netdev.ot.role, self.device_role1)
+
+    def test_ensure_device_instance_not_exist(self):
+        """Verify ensure_device_instance function."""
+        nbk = NetboxKeeper(self.ndk2)
+        nbk.device_type = self.device_type1
+        nbk.netdev.ot = self.onboarding_task3
+
+        nbk.ensure_device_instance()
+        self.assertTrue(isinstance(nbk.device, Device))
+        self.assertEqual(nbk.device, nbk.netdev.ot.device)
+        self.assertEqual(nbk.device.serial, "123456")
+
+    def test_ensure_interface_not_exist(self):
+        """Verify ensure_interface function when the interface do not exist."""
+        nbk = NetboxKeeper(self.ndk2)
+        nbk.device_type = self.device_type1
+        nbk.netdev.ot = self.onboarding_task3
+
+        nbk.ensure_device_instance()
+
+        nbk.ensure_interface()
+        self.assertTrue(isinstance(nbk.interface, Interface))
+        self.assertEqual(nbk.interface.name, "ge-0/0/0")
+
+    def test_ensure_interface_exist(self):
+        """Verify ensure_interface function when the interface already exist."""
+        nbk = NetboxKeeper(self.ndk2)
+        nbk.device_type = self.device_type1
+        nbk.netdev.ot = self.onboarding_task3
+
+        nbk.ensure_device_instance()
+        intf = Interface.objects.create(name=nbk.netdev.mgmt_ifname, device=nbk.device)
+
+        nbk.ensure_interface()
+        self.assertEqual(nbk.interface, intf)
+
+    def test_ensure_primary_ip_not_exist(self):
+        """Verify ensure_primary_ip function when the Ip address do not already exist."""
+        nbk = NetboxKeeper(self.ndk2)
+        nbk.device_type = self.device_type1
+        nbk.netdev.ot = self.onboarding_task3
+
+        nbk.ensure_device_instance()
+        nbk.ensure_interface()
+        nbk.ensure_primary_ip()
+        self.assertTrue(isinstance(nbk.primary_ip, IPAddress))
+        self.assertEqual(nbk.primary_ip.interface, nbk.interface)
