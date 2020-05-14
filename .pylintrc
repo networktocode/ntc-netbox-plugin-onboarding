@@ -23,3 +23,4 @@ disable=bad-continuation,
   too-few-public-methods,
   too-many-ancestors,
   too-many-instance-attributes,
+  duplicate-code

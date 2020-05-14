@@ -43,12 +43,19 @@ def build(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
     )
 
+
 # ------------------------------------------------------------------------------
 # START / STOP / DEBUG
 # ------------------------------------------------------------------------------
 @task
 def debug(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Start NetBox and its dependencies in debug mode."""
+    """Start NetBox and its dependencies in debug mode.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     print("Starting Netbox .. ")
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up",
@@ -58,7 +65,13 @@ def debug(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
 @task
 def start(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Start NetBox and its dependencies in detached mode."""
+    """Start NetBox and its dependencies in detached mode.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     print("Starting Netbox in detached mode.. ")
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d",
@@ -68,7 +81,13 @@ def start(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
 @task
 def stop(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Stop NetBox and its dependencies."""
+    """Stop NetBox and its dependencies.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     print("Stopping Netbox .. ")
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
@@ -78,7 +97,13 @@ def stop(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
 @task
 def destroy(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Destroy all containers and volumes."""
+    """Destroy all containers and volumes.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} down",
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
@@ -94,7 +119,13 @@ def destroy(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 # ------------------------------------------------------------------------------
 @task
 def nbshell(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Launch a nbshell session."""
+    """Launch a nbshell session.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py nbshell",
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
@@ -104,7 +135,13 @@ def nbshell(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
 @task
 def cli(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Launch a bash shell inside the running NetBox container."""
+    """Launch a bash shell inside the running NetBox container.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox bash",
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
@@ -114,7 +151,14 @@ def cli(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
 @task
 def create_user(context, user="admin", netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Create a new user in django (default: admin), will prompt for password."""
+    """Create a new user in django (default: admin), will prompt for password.
+
+    Args:
+        context (obj): Used to run specific commands
+        user (str): name of the superuser to create
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox python manage.py createsuperuser --username {user}",
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
@@ -124,7 +168,13 @@ def create_user(context, user="admin", netbox_ver=NETBOX_VER, python_ver=PYTHON_
 
 @task
 def makemigrations(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
-    """Run Make Migration in Django."""
+    """Run Make Migration in Django.
+
+    Args:
+        context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
+    """
     context.run(
         f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} up -d postgres",
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
@@ -150,13 +200,16 @@ def unittest(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
     Args:
         context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     context.run(
-        f'{docker} sh -c "python manage.py test netbox_onboarding"', 
+        f'{docker} sh -c "python manage.py test netbox_onboarding"',
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
-        pty=True
+        pty=True,
     )
+
 
 @task
 def pylint(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
@@ -164,6 +217,8 @@ def pylint(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
     Args:
         context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     # We exclude the /migrations/ directory since it is autogenerated code
@@ -181,12 +236,14 @@ def black(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
     Args:
         context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     context.run(
-        f'{docker} sh -c "cd /source && black --check --diff ."', 
+        f'{docker} sh -c "cd /source && black --check --diff ."',
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
-        pty=True
+        pty=True,
     )
 
 
@@ -196,6 +253,8 @@ def pydocstyle(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
     Args:
         context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     # We exclude the /migrations/ directory since it is autogenerated code
@@ -212,13 +271,16 @@ def bandit(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
     Args:
         context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     context.run(
-        f'{docker} sh -c "cd /source && bandit --recursive ./"', 
+        f'{docker} sh -c "cd /source && bandit --recursive ./"',
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
-        pty=True
+        pty=True,
     )
+
 
 @task
 def tests(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
@@ -226,6 +288,8 @@ def tests(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
 
     Args:
          context (obj): Used to run specific commands
+        netbox_ver (str): NetBox version to use to build the container
+        python_ver (str): Will use the Python version docker image to build from
     """
     # Sorted loosely from fastest to slowest
     print("Running black...")
