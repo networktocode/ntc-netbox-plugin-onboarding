@@ -1,4 +1,4 @@
-"""Unit tests for netbox_onboarding REST API.
+"""Unit tests for netbox_onboarding.onboard module and its classes.
 
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,8 +67,8 @@ class NetboxKeeperTestCase(TestCase):
             nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
 
         nbk.ensure_device_type(create_manufacturer=True, create_device_type=True)
-        self.assertTrue(isinstance(nbk.manufacturer, Manufacturer))
-        self.assertTrue(isinstance(nbk.device_type, DeviceType))
+        self.assertIsInstance(nbk.manufacturer, Manufacturer)
+        self.assertIsInstance(nbk.device_type, DeviceType)
 
     def test_ensure_device_type_present(self):
         """Verify ensure_device_type function when Manufacturer and DeviceType object are already present."""
@@ -87,7 +87,7 @@ class NetboxKeeperTestCase(TestCase):
             nbk.ensure_device_role(create_device_role=False, default_device_role="mytestrole")
 
         nbk.ensure_device_role(create_device_role=True, default_device_role="mytestrole")
-        self.assertTrue(isinstance(nbk.netdev.ot.role, DeviceRole))
+        self.assertIsInstance(nbk.netdev.ot.role, DeviceRole)
         self.assertEqual(nbk.netdev.ot.role.slug, "mytestrole")
 
     def test_ensure_device_role_exist(self):
@@ -111,7 +111,7 @@ class NetboxKeeperTestCase(TestCase):
         nbk.netdev.ot = self.onboarding_task3
 
         nbk.ensure_device_instance()
-        self.assertTrue(isinstance(nbk.device, Device))
+        self.assertIsInstance(nbk.device, Device)
         self.assertEqual(nbk.device, nbk.netdev.ot.device)
         self.assertEqual(nbk.device.serial, "123456")
 
@@ -124,7 +124,7 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_device_instance()
 
         nbk.ensure_interface()
-        self.assertTrue(isinstance(nbk.interface, Interface))
+        self.assertIsInstance(nbk.interface, Interface)
         self.assertEqual(nbk.interface.name, "ge-0/0/0")
 
     def test_ensure_interface_exist(self):
@@ -148,5 +148,5 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_device_instance()
         nbk.ensure_interface()
         nbk.ensure_primary_ip()
-        self.assertTrue(isinstance(nbk.primary_ip, IPAddress))
+        self.assertIsInstance(nbk.primary_ip, IPAddress)
         self.assertEqual(nbk.primary_ip.interface, nbk.interface)
