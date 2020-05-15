@@ -35,8 +35,8 @@ class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
 
     permission_required = "dcim.view_device"
     queryset = OnboardingTask.objects.all().order_by("-id")
-    filter = OnboardingTaskFilter
-    filter_form = OnboardingTaskFilterForm
+    filterset = OnboardingTaskFilter
+    filterset_form = OnboardingTaskFilterForm
     table = OnboardingTaskTable
     template_name = "netbox_onboarding/onboarding_tasks_list.html"
 
