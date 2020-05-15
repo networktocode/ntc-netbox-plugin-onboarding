@@ -59,7 +59,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         read_only=False,
         queryset=Platform.objects.all(),
         slug_field="slug",
-        required=True,
+        required=False,
         help_text="NetBox Platform 'slug' value",
     )
 

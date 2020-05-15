@@ -19,8 +19,7 @@ from rest_framework.test import APIClient
 
 from users.models import Token
 
-# TODO remove Platform once #11 is merged
-from dcim.models import Site, Platform
+from dcim.models import Site
 
 
 from netbox_onboarding.models import OnboardingTask
@@ -39,14 +38,9 @@ class OnboardingTaskTestCase(TestCase):
         self.base_url_lookup = "plugins-api:netbox_onboarding-api:onboardingtask"
 
         self.site1 = Site.objects.create(name="USWEST", slug="uswest")
-        # TODO remove platform once #11 is merged
-        self.platform1 = Platform.objects.create(name="NXOS", slug="nxos")
-        self.onboarding_task1 = OnboardingTask.objects.create(
-            ip_address="10.10.10.10", site=self.site1, platform=self.platform1
-        )
-        self.onboarding_task2 = OnboardingTask.objects.create(
-            ip_address="192.168.1.1", site=self.site1, platform=self.platform1
-        )
+
+        self.onboarding_task1 = OnboardingTask.objects.create(ip_address="10.10.10.10", site=self.site1)
+        self.onboarding_task2 = OnboardingTask.objects.create(ip_address="192.168.1.1", site=self.site1)
 
     def test_list_onboarding_tasks(self):
         """Verify that OnboardingTasks can be listed."""
@@ -64,7 +58,6 @@ class OnboardingTaskTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["ip_address"], self.onboarding_task1.ip_address)
         self.assertEqual(response.data["site"], self.onboarding_task1.site.slug)
-        self.assertEqual(response.data["platform"], self.onboarding_task1.platform.slug)
 
     def test_create_task_missing_mandatory_parameters(self):
         """Verify that the only mandatory POST parameters are ip_address and site."""
@@ -75,15 +68,12 @@ class OnboardingTaskTestCase(TestCase):
         # The response tells us which fields are missing from the request
         self.assertIn("ip_address", response.data)
         self.assertIn("site", response.data)
-        # TODO remove platform once #11 is merged
-        # self.assertEqual(len(response.data), 2, "Only two parameters should be mandatory")
-        self.assertIn("platform", response.data)
-        self.assertEqual(len(response.data), 3, "Only two parameters should be mandatory")
+        self.assertEqual(len(response.data), 2, "Only two parameters should be mandatory")
 
     def test_create_task(self):
         """Verify that an OnboardingTask can be created."""
         url = reverse(f"{self.base_url_lookup}-list")
-        data = {"ip_address": "10.10.10.20", "site": self.site1.slug, "platform": self.platform1.slug}
+        data = {"ip_address": "10.10.10.20", "site": self.site1.slug}
 
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -95,7 +85,6 @@ class OnboardingTaskTestCase(TestCase):
         onboarding_task = OnboardingTask.objects.get(pk=response.data["id"])
         self.assertEqual(onboarding_task.ip_address, data["ip_address"])
         self.assertEqual(onboarding_task.site, self.site1)
-        self.assertEqual(onboarding_task.platform, self.platform1)
 
     def test_update_task_forbidden(self):
         """Verify that an OnboardingTask cannot be updated via this API."""
