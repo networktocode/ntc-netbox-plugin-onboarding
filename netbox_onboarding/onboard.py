@@ -154,47 +154,47 @@ class NetdevKeeper:
 
         return guessed_device_type
 
-    def get_platform_name(self):
-        """Get platform name in netmiko format (ie cisco_ios, cisco_xr etc)."""
+    def get_platform_slug(self):
+        """Get platform slug in netmiko format (ie cisco_ios, cisco_xr etc)."""
         if self.ot.platform:
-            platform_name = self.ot.platform.name
+            platform_slug = self.ot.platform.slug
         else:
-            platform_name = self.guess_netmiko_device_type(
+            platform_slug = self.guess_netmiko_device_type(
                 host=self.ot.ip_address, username=self.username, password=self.password
             )
 
-        logging.info("PLATFORM NAME is %s", platform_name)
+        logging.info("PLATFORM NAME is %s", platform_slug)
 
-        return platform_name
+        return platform_slug
 
     @staticmethod
-    def get_platform_object_from_netbox(platform_name):
-        """Get platform object from NetBox filtered by platform_name.
+    def get_platform_object_from_netbox(platform_slug):
+        """Get platform object from NetBox filtered by platform_slug.
 
         Lookup is performed based on the object's slug field (not the name field)
         """
         try:
-            platform_object = Platform.objects.get(slug=platform_name)
-            logging.info("PLATFORM: found in NetBox %s", platform_name)
+            platform = Platform.objects.get(slug=platform_slug)
+            logging.info("PLATFORM: found in NetBox %s", platform_slug)
         except Platform.DoesNotExist:
 
             if not PLUGIN_SETTINGS["create_platform_if_missing"]:
                 raise OnboardException(
-                    reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_name}"
+                    reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_slug}"
                 )
 
             if platform_name not in NETMIKO_TO_NAPALM.keys():
                 raise OnboardException(
                     reason="fail-general",
-                    message=f"ERROR platform not found in NetBox and it's not part eligible to auto-creation: {platform_name}  ",
+                    message=f"ERROR platform not found in NetBox and it's eligible for auto-creation: {platform_slug}",
                 )
 
-            platform_object = Platform.objects.create(
-                name=platform_name, slug=platform_name, napalm_driver=NETMIKO_TO_NAPALM[platform_name]
+            platform = Platform.objects.create(
+                name=platform_slug, slug=platform_slug, napalm_driver=NETMIKO_TO_NAPALM[platform_slug]
             )
-            platform_object.save()
+            platform.save()
 
-        return platform_object
+        return platform
 
     def get_required_info(self):
         """Gather information from the network device that is needed to onboard the device into the NetBox system.
@@ -222,7 +222,8 @@ class NetdevKeeper:
 
             if not driver_name:
                 raise OnboardException(
-                    reason="fail-general", message=f"Onboarding for platform {platform_name} not supported"
+                    reason="fail-general",
+                    message=f"Onboarding for Platform {platform_name} not supported, as it has no specified NAPALM driver",
                 )
 
             driver = get_network_driver(driver_name)
@@ -321,7 +322,7 @@ class NetboxKeeper:
         # instance.
 
         try:
-            self.manufacturer = Manufacturer.objects.get(name=self.netdev.vendor)
+            self.manufacturer = Manufacturer.objects.get(slug=self.netdev.vendor)
         except Manufacturer.DoesNotExist:
             if not create_manufacturer:
                 raise OnboardException(
@@ -359,7 +360,7 @@ class NetboxKeeper:
         if self.device_type.manufacturer.id != self.manufacturer.id:
             raise OnboardException(
                 reason="fail-config",
-                message=f"ERROR device type {self.netdev.model}" f"already exists for vendor {self.netdev.vendor}",
+                message=f"ERROR device type {self.netdev.model} already exists for vendor {self.netdev.vendor}",
             )
 
     def ensure_device_role(
