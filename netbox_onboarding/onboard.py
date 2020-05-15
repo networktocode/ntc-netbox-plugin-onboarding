@@ -183,7 +183,7 @@ class NetdevKeeper:
                     reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_slug}"
                 )
 
-            if platform_name not in NETMIKO_TO_NAPALM.keys():
+            if platform_slug not in NETMIKO_TO_NAPALM.keys():
                 raise OnboardException(
                     reason="fail-general",
                     message=f"ERROR platform not found in NetBox and it's eligible for auto-creation: {platform_slug}",
@@ -215,15 +215,15 @@ class NetdevKeeper:
         logging.info("COLLECT: device information %s", mgmt_ipaddr)
 
         try:
-            platform_name = self.get_platform_name()
-            platform_object = self.get_platform_object_from_netbox(platform_name=platform_name)
+            platform_slug = self.get_platform_slug()
+            platform_object = self.get_platform_object_from_netbox(platform_slug=platform_slug)
 
             driver_name = platform_object.napalm_driver
 
             if not driver_name:
                 raise OnboardException(
                     reason="fail-general",
-                    message=f"Onboarding for Platform {platform_name} not supported, as it has no specified NAPALM driver",
+                    message=f"Onboarding for Platform {platform_slug} not supported, as it has no specified NAPALM driver",
                 )
 
             driver = get_network_driver(driver_name)

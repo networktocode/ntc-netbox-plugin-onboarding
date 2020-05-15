@@ -60,12 +60,12 @@ class NetboxKeeperTestCase(TestCase):
         """Verify ensure_device_type function when Manufacturer and DeviceType object are not present."""
         nbk = NetboxKeeper(self.ndk1)
 
-        with self.assertRaises(OnboardException):
+        with self.assertRaises(OnboardException) as exc_info:
             nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
             self.assertEqual(exc_info.exception.message, "ERROR manufacturer not found: cisco")
             self.assertEqual(exc_info.exception.reason, "fail-config")
 
-        with self.assertRaises(OnboardException):
+        with self.assertRaises(OnboardException) as exc_info:
             nbk.ensure_device_type(create_manufacturer=True, create_device_type=False)
             self.assertEqual(exc_info.exception.message, "ERROR device type not found: csr1000v")
             self.assertEqual(exc_info.exception.reason, "fail-config")
@@ -86,7 +86,7 @@ class NetboxKeeperTestCase(TestCase):
         """Verify ensure_device_role function when DeviceRole do not already exist."""
         nbk = NetboxKeeper(self.ndk1)
 
-        with self.assertRaises(OnboardException):
+        with self.assertRaises(OnboardException) as exc_info:
             nbk.ensure_device_role(create_device_role=False, default_device_role="mytestrole")
             self.assertEqual(exc_info.exception.message, "ERROR device role not found: mytestrole")
             self.assertEqual(exc_info.exception.reason, "fail-config")
