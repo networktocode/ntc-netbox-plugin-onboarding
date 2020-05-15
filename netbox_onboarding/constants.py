@@ -1,7 +1,7 @@
 """Constants for netbox_onboarding plugin."""
 NETMIKO_TO_NAPALM = {
     "cisco_ios": "ios",
-    "cisco_nxos": "nxos",
+    "cisco_nxos": "nxos_ssh",
     "arista_eos": "eos",
     "juniper_junos": "junos",
     "cisco_xr": "iosxr",
