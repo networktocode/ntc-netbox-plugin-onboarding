@@ -24,6 +24,24 @@ from .choices import OnboardingStatusChoices, OnboardingFailChoices
 BLANK_CHOICE = (("", "---------"),)
 
 
+class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
+    """Form for creating a new OnboardingTask instance."""
+
+    ip_address = forms.CharField(required=True, label="IP address", help_text="IP address of the device to onboard")
+
+    site = forms.ModelChoiceField(required=True, queryset=Site.objects.all(), to_field_name="slug")
+
+    username = forms.CharField(required=False, help_text="Device username (will not be stored in database)")
+    password = forms.CharField(required=False, help_text="Device password (will not be stored in database)")
+    secret = forms.CharField(required=False, help_text="Device secret (will not be stored in database)")
+
+    device_type = forms.CharField(required=False, help_text="Device type slug (optional)")
+
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
+        model = OnboardingTask
+        fields = ["ip_address", "site", "username", "password", "secret", "role", "device_type", "platform", "port", "timeout"]
+
+
 class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
     """Form for filtering OnboardingTask instances."""
 

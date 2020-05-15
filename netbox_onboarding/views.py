@@ -18,11 +18,11 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import render
 from django_rq import get_queue
-from utilities.views import BulkImportView, ObjectListView
+from utilities.views import BulkImportView, ObjectEditView, ObjectListView
 
 from netbox_onboarding.utils.credentials import Credentials
 from .filters import OnboardingTaskFilter
-from .forms import OnboardingTaskFilterForm, OnboardingTaskFeedCSVForm
+from .forms import OnboardingTaskForm, OnboardingTaskFilterForm, OnboardingTaskFeedCSVForm
 from .models import OnboardingTask
 from .tables import OnboardingTaskTable, OnboardingTaskFeedBulkTable
 
@@ -40,6 +40,43 @@ class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
     table = OnboardingTaskTable
     template_name = "netbox_onboarding/onboarding_tasks_list.html"
 
+
+def handle_created_onboarding_task(task, owner):
+    """Sanitize the OnboardingTask and hand it off to the worker queue."""
+    credentials = Credentials(username=task.username, password=task.password, secret=task.secret)
+
+    task.username = ""
+    task.password = ""
+    task.secret = ""
+    task.owner = owner
+    task.save()
+
+    get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", task.pk, credentials)
+
+
+class OnboardingTaskCreateView(PermissionRequiredMixin, ObjectEditView):
+    """View for creating a new OnboardingTask."""
+
+    permission_required = "dcim.add_device"
+    model = OnboardingTask
+    queryset = OnboardingTask.objects.all()
+    model_form = OnboardingTaskForm
+    template_name = "netbox_onboarding/onboarding_task_edit.html"
+    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
+
+    def post(self, request):
+        """Process an HTTP POST request."""
+        form = self.model_form(request.POST)
+
+        if form.is_valid():
+            obj = form.save()
+            handle_created_onboarding_task(obj, self.request.user)
+
+        return render(
+            request,
+            self.template_name,
+            {"form": form}
+        )
 
 class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, BulkImportView):
     """View for bulk-importing a CSV file to create OnboardingTasks."""
@@ -70,15 +107,7 @@ class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, BulkImportView):
                             raise ValidationError("")
 
                 for ot in new_objs:
-                    credentials = Credentials(username=ot.username, password=ot.password, secret=ot.secret,)
-
-                    ot.username = ""
-                    ot.password = ""
-                    ot.secret = ""
-                    ot.owner = self.request.user
-                    ot.save()
-
-                    get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", ot.pk, credentials)
+                    handle_created_onboarding_task(ot, self.request.user)
 
                 if new_objs:
                     msg = "Imported {} {}".format(len(new_objs), new_objs[0]._meta.verbose_name_plural)

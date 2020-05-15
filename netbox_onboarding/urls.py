@@ -13,9 +13,10 @@ limitations under the License.
 """
 from django.urls import path
 
-from .views import OnboardingTaskListView, OnboardingTaskFeedBulkImportView
+from .views import OnboardingTaskListView, OnboardingTaskCreateView, OnboardingTaskFeedBulkImportView
 
 urlpatterns = [
     path("", OnboardingTaskListView.as_view(), name="onboarding_task_list"),
+    path("add/", OnboardingTaskCreateView.as_view(), name="onboarding_task_add"),
     path("import/", OnboardingTaskFeedBulkImportView.as_view(), name="onboarding_task_import"),
 ]
