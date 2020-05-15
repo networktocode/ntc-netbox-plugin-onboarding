@@ -27,12 +27,10 @@ class NetboxKeeperTestCase(TestCase):
         """Create a superuser and token for API calls."""
         self.site1 = Site.objects.create(name="USWEST", slug="uswest")
 
-        # self.platform1 = Platform.objects.create(name="NXOS", slug="nxos")
-
-        self.manufacturer1 = Manufacturer.objects.create(name="juniper", slug="juniper")
-        self.platform1 = Platform.objects.create(name="junos", slug="junos")
+        self.manufacturer1 = Manufacturer.objects.create(name="Juniper", slug="juniper")
+        self.platform1 = Platform.objects.create(name="JunOS", slug="junos")
         self.device_type1 = DeviceType.objects.create(slug="srx3600", model="SRX3600", manufacturer=self.manufacturer1)
-        self.device_role1 = DeviceRole.objects.create(name="firewall", slug="firewall")
+        self.device_role1 = DeviceRole.objects.create(name="Firewall", slug="firewall")
 
         self.onboarding_task1 = OnboardingTask.objects.create(ip_address="10.10.10.10", site=self.site1)
         self.onboarding_task2 = OnboardingTask.objects.create(
@@ -62,9 +60,15 @@ class NetboxKeeperTestCase(TestCase):
         """Verify ensure_device_type function when Manufacturer and DeviceType object are not present."""
         nbk = NetboxKeeper(self.ndk1)
 
-        ## Find how to assert better which exception is catched
         with self.assertRaises(OnboardException):
             nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
+            self.assertEqual(exc_info.exception.message, "ERROR manufacturer not found: cisco")
+            self.assertEqual(exc_info.exception.reason, "fail-config")
+
+        with self.assertRaises(OnboardException):
+            nbk.ensure_device_type(create_manufacturer=True, create_device_type=False)
+            self.assertEqual(exc_info.exception.message, "ERROR device type not found: csr1000v")
+            self.assertEqual(exc_info.exception.reason, "fail-config")
 
         nbk.ensure_device_type(create_manufacturer=True, create_device_type=True)
         self.assertIsInstance(nbk.manufacturer, Manufacturer)
@@ -82,9 +86,10 @@ class NetboxKeeperTestCase(TestCase):
         """Verify ensure_device_role function when DeviceRole do not already exist."""
         nbk = NetboxKeeper(self.ndk1)
 
-        ## Find how to assert better which exception is catched
         with self.assertRaises(OnboardException):
             nbk.ensure_device_role(create_device_role=False, default_device_role="mytestrole")
+            self.assertEqual(exc_info.exception.message, "ERROR device role not found: mytestrole")
+            self.assertEqual(exc_info.exception.reason, "fail-config")
 
         nbk.ensure_device_role(create_device_role=True, default_device_role="mytestrole")
         self.assertIsInstance(nbk.netdev.ot.role, DeviceRole)
