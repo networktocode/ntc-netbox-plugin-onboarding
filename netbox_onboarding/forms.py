@@ -16,7 +16,7 @@ from django import forms
 from django_rq import get_queue
 
 from utilities.forms import BootstrapMixin
-from dcim.models import Site, Platform, DeviceRole
+from dcim.models import Site, Platform, DeviceRole, DeviceType
 from extras.forms import CustomFieldModelCSVForm
 
 from .models import OnboardingTask
@@ -34,24 +34,45 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
     site = forms.ModelChoiceField(required=True, queryset=Site.objects.all(), to_field_name="slug")
 
     username = forms.CharField(required=False, help_text="Device username (will not be stored in database)")
-    password = forms.CharField(required=False, help_text="Device password (will not be stored in database)")
-    secret = forms.CharField(required=False, help_text="Device secret (will not be stored in database)")
+    password = forms.CharField(
+        required=False, widget=forms.PasswordInput, help_text="Device password (will not be stored in database)"
+    )
+    secret = forms.CharField(
+        required=False, widget=forms.PasswordInput, help_text="Device secret (will not be stored in database)"
+    )
 
-    device_type = forms.CharField(required=False, help_text="Device type slug (optional)")
+    platform = forms.ModelChoiceField(
+        queryset=Platform.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Device platform. Define ONLY to override auto-recognition of platform.",
+    )
+    role = forms.ModelChoiceField(
+        queryset=DeviceRole.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Device role. Define ONLY to override auto-recognition of role.",
+    )
+    device_type = forms.ModelChoiceField(
+        queryset=DeviceType.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Device type. Define ONLY to override auto-recognition of type.",
+    )
 
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = [
-            "ip_address",
             "site",
+            "ip_address",
+            "port",
+            "timeout",
             "username",
             "password",
             "secret",
+            "platform",
             "role",
             "device_type",
-            "platform",
-            "port",
-            "timeout",
         ]
 
     def save(self, commit=True, **kwargs):

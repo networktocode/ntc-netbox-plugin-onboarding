@@ -13,6 +13,7 @@ limitations under the License.
 """
 
 from extras.plugins import PluginMenuButton, PluginMenuItem
+from utilities.choices import ButtonColorChoices
 
 menu_items = (
     PluginMenuItem(
@@ -21,9 +22,16 @@ menu_items = (
         permissions=[],
         buttons=(
             PluginMenuButton(
+                link="plugins:netbox_onboarding:onboarding_task_add",
+                title="Onboard",
+                icon_class="fa fa-plus",
+                color=ButtonColorChoices.GREEN,
+            ),
+            PluginMenuButton(
                 link="plugins:netbox_onboarding:onboarding_task_import",
                 title="Bulk Onboard",
                 icon_class="fa fa-download",
+                color=ButtonColorChoices.BLUE,
             ),
         ),
     ),
