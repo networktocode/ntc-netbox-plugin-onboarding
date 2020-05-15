@@ -41,8 +41,13 @@ class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
     template_name = "netbox_onboarding/onboarding_tasks_list.html"
 
 
-class OnboardingTaskBulkImportView(BulkImportView):
+class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, BulkImportView):
     """View for bulk-importing a CSV file to create OnboardingTasks."""
+
+    permission_required = "dcim.add_device"
+    model_form = OnboardingTaskFeedCSVForm
+    table = OnboardingTaskFeedBulkTable
+    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
 
     def post(self, request):
         """Process an HTTP POST request."""
@@ -53,8 +58,9 @@ class OnboardingTaskBulkImportView(BulkImportView):
             try:
                 # Iterate through CSV data and bind each row to a new model form instance.
                 with transaction.atomic():
-                    for row, data in enumerate(form.cleaned_data["csv"], start=1):
-                        obj_form = self.model_form(data)  # pylint:disable=not-callable
+                    headers, records = form.cleaned_data["csv"]
+                    for row, data in enumerate(records, start=1):
+                        obj_form = self.model_form(data, headers=headers)
                         if obj_form.is_valid():
                             obj = self._save_obj(obj_form, request)
                             new_objs.append(obj)
@@ -72,12 +78,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
                     ot.owner = self.request.user
                     ot.save()
 
-                    webhook_queue = get_queue("default")
-
-                    webhook_queue.enqueue("netbox_onboarding.worker.onboard_device", ot.pk, credentials)
-
-                # Compile a table containing the imported objects
-                obj_table = self.table(new_objs)  # pylint:disable=not-callable
+                    get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", ot.pk, credentials)
 
                 if new_objs:
                     msg = "Imported {} {}".format(len(new_objs), new_objs[0]._meta.verbose_name_plural)
@@ -86,7 +87,7 @@ class OnboardingTaskBulkImportView(BulkImportView):
                     return render(
                         request,
                         "import_success.html",
-                        {"table": obj_table, "return_url": self.get_return_url(request),},
+                        {"table": self.table(new_objs), "return_url": self.get_return_url(request),},
                     )
 
             except ValidationError:
@@ -97,17 +98,8 @@ class OnboardingTaskBulkImportView(BulkImportView):
             self.template_name,
             {
                 "form": form,
-                "fields": self.model_form().fields,  # pylint:disable=not-callable
-                "obj_type": self.model_form._meta.model._meta.verbose_name,
+                "fields": self.model_form().fields,
+                "obj_type": self.model_form._meta.model._meta.verbose_name,  # pylint:disable=no-member
                 "return_url": self.get_return_url(request),
             },
         )
-
-
-class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, OnboardingTaskBulkImportView):
-    """View for bulk-importing a CSV file to create OnboardingTasks."""
-
-    permission_required = "dcim.view_device"
-    model_form = OnboardingTaskFeedCSVForm
-    table = OnboardingTaskFeedBulkTable
-    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
