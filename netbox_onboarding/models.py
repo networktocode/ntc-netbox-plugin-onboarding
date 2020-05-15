@@ -31,12 +31,6 @@ class OnboardingTask(models.Model):
 
     site = models.ForeignKey(to="dcim.Site", on_delete=models.SET_NULL, blank=True, null=True)
 
-    username = models.CharField(max_length=255, help_text="Device Username (optional)", blank=True)
-
-    password = models.CharField(max_length=255, help_text="Device Password (optional)", blank=True)
-
-    secret = models.CharField(max_length=255, help_text="Device Secret Password (optional)", blank=True)
-
     role = models.ForeignKey(to="dcim.DeviceRole", on_delete=models.SET_NULL, blank=True, null=True)
 
     device_type = models.CharField(
@@ -63,9 +57,6 @@ class OnboardingTask(models.Model):
     csv_headers = [
         "site",
         "ip_address",
-        "username",
-        "password",
-        "secret",
         "port",
         "timeout",
         "platform",

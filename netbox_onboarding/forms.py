@@ -13,6 +13,7 @@ limitations under the License.
 """
 
 from django import forms
+from django_rq import get_queue
 
 from utilities.forms import BootstrapMixin
 from dcim.models import Site, Platform, DeviceRole
@@ -20,6 +21,7 @@ from extras.forms import CustomFieldModelCSVForm
 
 from .models import OnboardingTask
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
+from .utils.credentials import Credentials
 
 BLANK_CHOICE = (("", "---------"),)
 
@@ -39,7 +41,26 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
 
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
-        fields = ["ip_address", "site", "username", "password", "secret", "role", "device_type", "platform", "port", "timeout"]
+        fields = [
+            "ip_address",
+            "site",
+            "username",
+            "password",
+            "secret",
+            "role",
+            "device_type",
+            "platform",
+            "port",
+            "timeout",
+        ]
+
+    def save(self, commit=True, **kwargs):
+        """Save the model, and add it and the associated credentials to the onboarding worker queue."""
+        model = super().save(commit=commit, **kwargs)
+        if commit:
+            credentials = Credentials(self.data["username"], self.data["password"], self.data["secret"])
+            get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
+        return model
 
 
 class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
@@ -63,7 +84,7 @@ class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
 
 
 class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
-    """TODO document me."""
+    """Form for entering CSV to bulk-import OnboardingTask entries."""
 
     site = forms.ModelChoiceField(
         queryset=Site.objects.all(),
@@ -98,3 +119,11 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = OnboardingTask.csv_headers
+
+    def save(self, commit=True, **kwargs):
+        """Save the model, and add it and the associated credentials to the onboarding worker queue."""
+        model = super().save(commit=commit, **kwargs)
+        if commit:
+            credentials = Credentials(self.data.get("username"), self.data.get("password"), self.data.get("secret"))
+            get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
+        return model
