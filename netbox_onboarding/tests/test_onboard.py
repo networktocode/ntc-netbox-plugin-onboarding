@@ -97,7 +97,7 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_device_role(create_device_role=True, default_device_role="firewall")
         self.assertEqual(nbk.netdev.ot.role, self.device_role1)
 
-    def test_ensure_device_role_exist(self):
+    def test_ensure_device_role_assigned(self):
         """Verify ensure_device_role function when DeviceRole exist and is already assigned."""
         nbk = NetboxKeeper(self.ndk2)
 
