@@ -195,7 +195,11 @@ class NetdevKeeper:
 
         return platform
 
-    def get_required_info(self):
+    def get_required_info(
+        self,
+        default_mgmt_if=PLUGIN_SETTINGS["default_management_interface"],
+        default_mgmt_pfxlen=PLUGIN_SETTINGS["default_management_prefix_length"],
+    ):
         """Gather information from the network device that is needed to onboard the device into the NetBox system.
 
         Raises:
@@ -259,7 +263,7 @@ class NetdevKeeper:
                 for if_addr, if_addr_data in if_data["ipv4"].items():
                     if if_addr == mgmt_ipaddr:
                         return (if_name, if_addr_data["prefix_length"])
-            return ("PLACEHOLDER", 0)
+            return (default_mgmt_if, default_mgmt_pfxlen)
 
         mgmt_ifname, mgmt_pflen = get_mgmt_info()
 

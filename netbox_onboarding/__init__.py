@@ -33,6 +33,8 @@ class OnboardingConfig(PluginConfig):
         "create_device_type_if_missing": True,
         "create_device_role_if_missing": True,
         "default_device_role": "network",
+        "default_management_interface": "PLACEHOLDER",
+        "default_management_prefix_length": 0,
     }
     caching_config = {}
 
