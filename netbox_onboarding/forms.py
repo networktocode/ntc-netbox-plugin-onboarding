@@ -37,9 +37,6 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
     password = forms.CharField(
         required=False, widget=forms.PasswordInput, help_text="Device password (will not be stored in database)"
     )
-    secret = forms.CharField(
-        required=False, widget=forms.PasswordInput, help_text="Device secret (will not be stored in database)"
-    )
 
     platform = forms.ModelChoiceField(
         queryset=Platform.objects.all(),
@@ -69,7 +66,6 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
             "timeout",
             "username",
             "password",
-            "secret",
             "platform",
             "role",
             "device_type",
@@ -79,7 +75,7 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
         """Save the model, and add it and the associated credentials to the onboarding worker queue."""
         model = super().save(commit=commit, **kwargs)
         if commit:
-            credentials = Credentials(self.data.get("username"), self.data.get("password"), self.data.get("secret"))
+            credentials = Credentials(self.data.get("username"), self.data.get("password"))
             get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
         return model
 
@@ -117,7 +113,6 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
     ip_address = forms.CharField(required=True, help_text="IP Address of the onboarded device")
     username = forms.CharField(required=False, help_text="Username, will not be stored in database")
     password = forms.CharField(required=False, help_text="Password, will not be stored in database")
-    secret = forms.CharField(required=False, help_text="Secret password, will not be stored in database")
     platform = forms.ModelChoiceField(
         queryset=Platform.objects.all(),
         required=False,
@@ -145,6 +140,6 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
         """Save the model, and add it and the associated credentials to the onboarding worker queue."""
         model = super().save(commit=commit, **kwargs)
         if commit:
-            credentials = Credentials(self.data.get("username"), self.data.get("password"), self.data.get("secret"))
+            credentials = Credentials(self.data.get("username"), self.data.get("password"))
             get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
         return model

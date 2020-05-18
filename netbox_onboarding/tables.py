@@ -48,7 +48,6 @@ class OnboardingTaskFeedBulkTable(BaseTable):
         model = OnboardingTask
         fields = (
             "id",
-            "owner",
             "created_on",
             "site",
             "platform",

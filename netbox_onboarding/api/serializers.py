@@ -32,8 +32,6 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(required=False, write_only=True, help_text="Device password",)
 
-    secret = serializers.CharField(required=False, write_only=True, help_text="Device secret password",)
-
     site = serializers.SlugRelatedField(
         many=False,
         read_only=False,
@@ -81,7 +79,6 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
             "ip_address",
             "username",
             "password",
-            "secret",
             "site",
             "role",
             "device_type",
@@ -98,9 +95,8 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         # Fields are string-type so default to empty (instead of None)
         username = validated_data.pop("username", "")
         password = validated_data.pop("password", "")
-        secret = validated_data.pop("secret", "")
 
-        credentials = Credentials(username=username, password=password, secret=secret,)
+        credentials = Credentials(username=username, password=password)
 
         ot = OnboardingTask.objects.create(**validated_data)
 
