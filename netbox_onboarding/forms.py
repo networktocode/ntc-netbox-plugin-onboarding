@@ -79,7 +79,7 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
         """Save the model, and add it and the associated credentials to the onboarding worker queue."""
         model = super().save(commit=commit, **kwargs)
         if commit:
-            credentials = Credentials(self.data["username"], self.data["password"], self.data["secret"])
+            credentials = Credentials(self.data.get("username"), self.data.get("password"), self.data.get("secret"))
             get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
         return model
 

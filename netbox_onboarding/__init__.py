@@ -21,7 +21,7 @@ class OnboardingConfig(PluginConfig):
     """Plugin configuration for the netbox_onboarding plugin."""
 
     name = "netbox_onboarding"
-    verbose_name = "A plugin to easily onboard new devices."
+    verbose_name = "Device Onboarding"
     version = __version__
     author = "Network to Code"
     description = "A plugin for NetBox to easily onboard new devices."

@@ -12,13 +12,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import django_tables2 as tables
-from utilities.tables import BaseTable
+from utilities.tables import BaseTable, ToggleColumn
 from .models import OnboardingTask
 
 
 class OnboardingTaskTable(BaseTable):
     """Table for displaying OnboardingTask instances."""
 
+    pk = ToggleColumn()
     site = tables.LinkColumn()
     platform = tables.LinkColumn()
     created_device = tables.LinkColumn()
