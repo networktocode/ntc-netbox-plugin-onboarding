@@ -5,7 +5,7 @@
 
 A plugin for [NetBox](https://github.com/netbox-community/netbox) to easily onboard new devices.
 
-`ntc-netbox-plugin-onboarding` is leverating [Netmiko](https://github.com/ktbyers/netmiko), [NAPALM](https://napalm.readthedocs.io/en/latest/) & [Django-RQ](https://github.com/rq/django-rq) to simplify the onboarding process of a new device into NetBox down to an IP Address and a site.
+`ntc-netbox-plugin-onboarding` is using [Netmiko](https://github.com/ktbyers/netmiko), [NAPALM](https://napalm.readthedocs.io/en/latest/) & [Django-RQ](https://github.com/rq/django-rq) to simplify the onboarding process of a new device into NetBox down to an IP Address and a site.
 The goal of this plugin is not to import everything about a device into NetBox but rather to help build quickly an inventory in NetBox that is often the first step into an automation journey.
 
 ## Installation
@@ -38,7 +38,7 @@ The plugin behavior can be controlled with the following list of settings
 ## Usage
 ### Preparation
 
-The work properly the plugin need to know the Site, Platform, Device Type, Device Role of each device as well as its IP primary IP address.
+To work properly the plugin needs to know the Site, Platform, Device Type, Device Role of each device as well as its primary IP address.
 It's recommended to create these objects in NetBox ahead of time and to provide them when you want to start the onboarding process.
 
 If `Platform`, `Device Type` and/or `Device Role` are not provided, the plugin will try to identify these information automatically and, based on the settings, it can create them in NetBox as needed.
@@ -49,15 +49,15 @@ If `Platform`, `Device Type` and/or `Device Role` are not provided, the plugin w
 A new device can be onboarded via :
 - A web form
 - A CSV form to import multiple devices in bulk. `/plugins/onboarding/import/`
-- An API, `POST /plugins​/onboarding​/onboarding​/`
+- An API, `POST /api/plugins​/onboarding​/onboarding​/`
 
 During a successful onboarding process, a new device will be created in NetBox with its management interface and its primary IP assigned. The management interface will be discovered on the device based on the IP address provided.
 
 ### Consult the status of onboarding tasks
 
-The status of the onboarding process for each device is maintain is a dedicated table in NetBox and can be retrive :
+The status of the onboarding process for each device is maintained is a dedicated table in NetBox and can be retrived :
 - Via the UI `/plugins/onboarding/`
-- Via the API `GET /plugins​/onboarding​/onboarding​/`
+- Via the API `GET /api/plugins​/onboarding​/onboarding​/`
 
 <ADD SCREEN SHOT HERE>
 
@@ -66,10 +66,10 @@ The status of the onboarding process for each device is maintain is a dedicated 
 The plugin includes 4 API endpoints to manage the onbarding tasks
 
 ```shell
-GET        /plugins​/onboarding​/onboarding​/       Check status of all onboarding tasks.
-POST    ​   /plugins​/onboarding​/onboarding​/       Onboard a new device
-GET     ​   /plugins​/onboarding​/onboarding​/{id}​/  Check the status of a specific onboarding task
-DELETE    ​ /plugins​/onboarding​/onboarding​/{id}​/  Delete a specific onboarding task
+GET        /api/plugins​/onboarding​/onboarding​/       Check status of all onboarding tasks.
+POST    ​   /api/plugins​/onboarding​/onboarding​/       Onboard a new device
+GET     ​   /api/plugins​/onboarding​/onboarding​/{id}​/  Check the status of a specific onboarding task
+DELETE    ​ /api/plugins​/onboarding​/onboarding​/{id}​/  Delete a specific onboarding task
 ```
 
 ## Contributing

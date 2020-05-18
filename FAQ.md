@@ -1,4 +1,4 @@
-# Frequenty Asked Questions
+# Frequently Asked Questions
 
 ## Is it possible to disable the automatic creation of Device Type, Device Role or Platform ?
 
@@ -32,11 +32,11 @@
 
 ## Is this plugin able to automatically discover the type of my device ? 
 
-> **Yes**, The plugin is leveraging Netmiko & Napalm to attempt to automatically discover the OS and the model of each device.
+> **Yes**, The plugin is leveraging [Netmiko](https://github.com/ktbyers/netmiko) & [Napalm](https://napalm.readthedocs.io/en/latest/) to attempt to automatically discover the OS and the model of each device.
 
 ## How many device can I import at the same time ?
 
-> **Many**, There is really not strict limitations regarding the number of devices that can be importer at the same time. The speed at which devices will be imported will depend of the number of active RQ workers.
+> **Many**, There are no strict limitations regarding the number of devices that can be imported. The speed at which devices will be imported will depend of the number of active RQ workers.
 
 ## Do I need to setup a dedicated RQ Worker node ?
 
