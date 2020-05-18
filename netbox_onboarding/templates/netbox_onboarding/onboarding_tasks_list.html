@@ -2,6 +2,12 @@
 {% load buttons %}
 
 {% block content %}
+<div class="pull-right noprint">
+    {% if permissions.add %}
+        {% add_button 'plugins:netbox_onboarding:onboarding_task_add' %}
+        {% import_button 'plugins:netbox_onboarding:onboarding_task_import' %}
+    {% endif %}
+</div>
 <h1>{% block title %}Onboarding Tasks{% endblock %}</h1>
 <div class="row">
 	<div class="col-md-9">
