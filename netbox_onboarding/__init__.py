@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__version__ = "1.0.0"
+__version__ = "0.9.0"
 
 from extras.plugins import PluginConfig
 
@@ -21,10 +21,10 @@ class OnboardingConfig(PluginConfig):
     """Plugin configuration for the netbox_onboarding plugin."""
 
     name = "netbox_onboarding"
-    verbose_name = "Plugin for Easy Device Onboarding"
-    version = "1.0.0"
+    verbose_name = "A plugin to easily onboard new devices."
+    version = __version__
     author = "Network to Code"
-    description = ""
+    description = "A plugin for NetBox to easily onboard new devices."
     base_url = "onboarding"
     required_settings = []
     default_settings = {
