@@ -1,8 +1,16 @@
 [tool.poetry]
 name = "ntc-netbox-plugin-onboarding"
-version = "0.9.0"
+version = "0.9.1"
 description = "A plugin for NetBox to easily onboard new devices."
 authors = ["Info <info@networktocode.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/networktocode/ntc-netbox-plugin-onboarding"
+repository = "https://github.com/networktocode/ntc-netbox-plugin-onboarding"
+keywords = ["netbox", "network", "onboarding", "django"]
+include = [
+    "LICENSE",
+]
 packages = [
     { include = "netbox_onboarding" },
 ]
