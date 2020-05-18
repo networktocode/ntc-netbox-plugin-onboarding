@@ -15,7 +15,7 @@ The plugin is available as a Python package in pypi and can be installed with pi
 pip install ntc-netbox-plugin-onboarding
 ```
 
-Once installed, the plugin need to be enabled in your `configuration.py`
+Once installed, the plugin needs to be enabled in your `configuration.py`
 ```python
 # In your configuration.py
 PLUGINS = ["netbox_onboarding"]
@@ -47,7 +47,7 @@ If `Platform`, `Device Type` and/or `Device Role` are not provided, the plugin w
 ### Onboard a new device
 
 A new device can be onboarded via :
-- A web form
+- A web form  `/plugins/onboarding/add/`
 - A CSV form to import multiple devices in bulk. `/plugins/onboarding/import/`
 - An API, `POST /api/plugins​/onboarding​/onboarding​/`
 
@@ -60,8 +60,6 @@ During a successful onboarding process, a new device will be created in NetBox w
 The status of the onboarding process for each device is maintained is a dedicated table in NetBox and can be retrived :
 - Via the UI `/plugins/onboarding/`
 - Via the API `GET /api/plugins​/onboarding​/onboarding​/`
-
-<ADD SCREEN SHOT HERE>
 
 ### API
 
@@ -121,3 +119,8 @@ Each command can be executed with `invoke <command>`. All commands support the a
 
 For any questions or comments, please check the [FAQ](FAQ.md) first and feel free to swing by the [Network to Code slack channel](https://networktocode.slack.com/) (channel #networktocode).
 Sign up [here](http://slack.networktocode.com/)
+
+## Screenshot
+
+Onboard a single device
+![Single Device Form](docs/images/single_device_form.png)
