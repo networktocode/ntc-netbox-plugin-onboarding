@@ -13,15 +13,75 @@ limitations under the License.
 """
 
 from django import forms
+from django_rq import get_queue
 
 from utilities.forms import BootstrapMixin
-from dcim.models import Site, Platform, DeviceRole
+from dcim.models import Site, Platform, DeviceRole, DeviceType
 from extras.forms import CustomFieldModelCSVForm
 
 from .models import OnboardingTask
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
+from .utils.credentials import Credentials
 
 BLANK_CHOICE = (("", "---------"),)
+
+
+class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
+    """Form for creating a new OnboardingTask instance."""
+
+    ip_address = forms.CharField(required=True, label="IP address", help_text="IP address of the device to onboard")
+
+    site = forms.ModelChoiceField(required=True, queryset=Site.objects.all(), to_field_name="slug")
+
+    username = forms.CharField(required=False, help_text="Device username (will not be stored in database)")
+    password = forms.CharField(
+        required=False, widget=forms.PasswordInput, help_text="Device password (will not be stored in database)"
+    )
+    secret = forms.CharField(
+        required=False, widget=forms.PasswordInput, help_text="Device secret (will not be stored in database)"
+    )
+
+    platform = forms.ModelChoiceField(
+        queryset=Platform.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Device platform. Define ONLY to override auto-recognition of platform.",
+    )
+    role = forms.ModelChoiceField(
+        queryset=DeviceRole.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Device role. Define ONLY to override auto-recognition of role.",
+    )
+    device_type = forms.ModelChoiceField(
+        queryset=DeviceType.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Device type. Define ONLY to override auto-recognition of type.",
+    )
+
+    class Meta:  # noqa: D106 "Missing docstring in public nested class"
+        model = OnboardingTask
+        fields = [
+            "site",
+            "ip_address",
+            "port",
+            "timeout",
+            "username",
+            "password",
+            "secret",
+            "platform",
+            "role",
+            "device_type",
+        ]
+
+    def save(self, commit=True, **kwargs):
+        """Save the model, and add it and the associated credentials to the onboarding worker queue."""
+        model = super().save(commit=commit, **kwargs)
+        if commit:
+            credentials = Credentials(self.data["username"], self.data["password"], self.data["secret"])
+            get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
+        return model
 
 
 class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
@@ -45,7 +105,7 @@ class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
 
 
 class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
-    """TODO document me."""
+    """Form for entering CSV to bulk-import OnboardingTask entries."""
 
     site = forms.ModelChoiceField(
         queryset=Site.objects.all(),
@@ -80,3 +140,11 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = OnboardingTask.csv_headers
+
+    def save(self, commit=True, **kwargs):
+        """Save the model, and add it and the associated credentials to the onboarding worker queue."""
+        model = super().save(commit=commit, **kwargs)
+        if commit:
+            credentials = Credentials(self.data.get("username"), self.data.get("password"), self.data.get("secret"))
+            get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
+        return model
