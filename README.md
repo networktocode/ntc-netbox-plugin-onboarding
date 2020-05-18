@@ -53,6 +53,8 @@ A new device can be onboarded via :
 
 During a successful onboarding process, a new device will be created in NetBox with its management interface and its primary IP assigned. The management interface will be discovered on the device based on the IP address provided.
 
+> By default, the plugin is using the credentials defined in the main `configuration.py` for Napalm (`NAPALM_USERNAME`/`NAPALM_PASSWORD`). It's possible to define specific credentials for each onboarding task.
+
 ### Consult the status of onboarding tasks
 
 The status of the onboarding process for each device is maintained is a dedicated table in NetBox and can be retrived :

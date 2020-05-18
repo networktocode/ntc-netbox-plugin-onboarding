@@ -18,6 +18,10 @@
 # }
 ```
 
+## How can I update the default credentials used to connect to a device ?
+
+> By default, the plugin is using the credentials defined in the main `configuration.py` for Napalm (`NAPALM_USERNAME`/`NAPALM_PASSWORD`). You can update the default credentials in `configuration.py` or you can provide specific one for each onboarding task.
+
 ## Does this plugin support the discovery and the creation of all interfaces and IP Addresses ?
 
 > **No**, The plugin will only discover and create the management interface and the management IP address. Importing all interfaces and IP addresses is a much larger problem that requires more preparation. This is out of scope of this project.
