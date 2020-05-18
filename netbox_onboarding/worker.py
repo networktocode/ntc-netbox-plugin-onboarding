@@ -12,6 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
+import time
 
 from django_rq import job
 
@@ -29,7 +30,12 @@ def onboard_device(task_id, credentials):
     username = credentials.username
     password = credentials.password
 
-    ot = OnboardingTask.objects.get(id=task_id)
+    try:
+        ot = OnboardingTask.objects.get(id=task_id)
+    except OnboardingTask.DoesNotExist:
+        # TODO: maybe we started before the DB was done writing it, or maybe it was deleted out from under us?
+        time.sleep(1)
+        ot = OnboardingTask.objects.get(id=task_id)
 
     logging.info("START: onboard device")
 
@@ -54,6 +60,7 @@ def onboard_device(task_id, credentials):
     except Exception as exc:
         ot.status = OnboardingStatusChoices.STATUS_FAILED
         ot.failed_reason = OnboardingFailChoices.FAIL_GENERAL
+        ot.message = str(exc)
         ot.save()
         raise
 

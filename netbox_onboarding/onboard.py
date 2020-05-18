@@ -17,7 +17,6 @@ import os
 import re
 import socket
 
-from first import first
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
 
@@ -196,7 +195,11 @@ class NetdevKeeper:
 
         return platform
 
-    def get_required_info(self):
+    def get_required_info(
+        self,
+        default_mgmt_if=PLUGIN_SETTINGS["default_management_interface"],
+        default_mgmt_pfxlen=PLUGIN_SETTINGS["default_management_prefix_length"],
+    ):
         """Gather information from the network device that is needed to onboard the device into the NetBox system.
 
         Raises:
@@ -217,6 +220,9 @@ class NetdevKeeper:
         try:
             platform_slug = self.get_platform_slug()
             platform_object = self.get_platform_object_from_netbox(platform_slug=platform_slug)
+            if self.ot.platform != platform_object:
+                self.ot.platform = platform_object
+                self.ot.save()
 
             driver_name = platform_object.napalm_driver
 
@@ -248,17 +254,18 @@ class NetdevKeeper:
         # locate the interface assigned with the mgmt_ipaddr value and retain
         # the interface name and IP prefix-length so that we can use it later
         # when creating the IPAM IP-Address instance.
+        # Note that in some cases (e.g., NAT) the mgmt_ipaddr may differ than
+        # the interface addresses present on the device. We need to handle this.
 
-        try:
-            mgmt_ifname, mgmt_pflen = first(
-                (if_name, if_addr_data["prefix_length"])
-                for if_name, if_data in ip_ifs.items()
-                for if_addr, if_addr_data in if_data["ipv4"].items()
-                if if_addr == mgmt_ipaddr
-            )
+        def get_mgmt_info():
+            """Get the interface name and prefix length for the management interface."""
+            for if_name, if_data in ip_ifs.items():
+                for if_addr, if_addr_data in if_data["ipv4"].items():
+                    if if_addr == mgmt_ipaddr:
+                        return (if_name, if_addr_data["prefix_length"])
+            return (default_mgmt_if, default_mgmt_pfxlen)
 
-        except Exception as exc:
-            raise OnboardException(reason="fail-general", message=str(exc))
+        mgmt_ifname, mgmt_pflen = get_mgmt_info()
 
         # retain the attributes that will be later used by NetBox processing.
 
@@ -322,14 +329,14 @@ class NetboxKeeper:
         # instance.
 
         try:
-            self.manufacturer = Manufacturer.objects.get(slug=self.netdev.vendor)
+            self.manufacturer = Manufacturer.objects.get(slug=self.netdev.vendor.lower())
         except Manufacturer.DoesNotExist:
             if not create_manufacturer:
                 raise OnboardException(
                     reason="fail-config", message=f"ERROR manufacturer not found: {self.netdev.vendor}"
                 )
 
-            self.manufacturer = Manufacturer.objects.create(name=self.netdev.vendor, slug=self.netdev.vendor)
+            self.manufacturer = Manufacturer.objects.create(name=self.netdev.vendor, slug=self.netdev.vendor.lower())
             self.manufacturer.save()
 
         # Now see if the device type (slug) already exists,
@@ -343,7 +350,9 @@ class NetboxKeeper:
             logging.warning("device model is now: %s", self.netdev.model)
 
         try:
-            self.device_type = DeviceType.objects.get(slug=self.netdev.model)
+            self.device_type = DeviceType.objects.get(slug=self.netdev.model.lower())
+            self.netdev.ot.device_type = self.device_type.slug
+            self.netdev.ot.save()
         except DeviceType.DoesNotExist:
             if not create_device_type:
                 raise OnboardException(
@@ -352,9 +361,11 @@ class NetboxKeeper:
 
             logging.info("CREATE: device-type: %s", self.netdev.model)
             self.device_type = DeviceType.objects.create(
-                slug=self.netdev.model, model=self.netdev.model.upper(), manufacturer=self.manufacturer
+                slug=self.netdev.model.lower(), model=self.netdev.model.upper(), manufacturer=self.manufacturer
             )
             self.device_type.save()
+            self.netdev.ot.device_type = self.device_type.slug
+            self.netdev.ot.save()
             return
 
         if self.device_type.manufacturer.id != self.manufacturer.id:
@@ -398,6 +409,7 @@ class NetboxKeeper:
 
     def ensure_device_instance(self):
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE."""
+        # TODO: this can create duplicate entries in NetBox...
         device, _ = Device.objects.get_or_create(
             name=self.netdev.hostname,
             device_type=self.device_type,
@@ -409,7 +421,7 @@ class NetboxKeeper:
         device.serial = self.netdev.serial_number
         device.save()
 
-        self.netdev.ot.device = device
+        self.netdev.ot.created_device = device
         self.netdev.ot.save()
 
         self.device = device

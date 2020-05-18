@@ -176,14 +176,6 @@ IDNA = ["idna (>=2.1)"]
 
 [[package]]
 category = "main"
-description = "Return the first true value of an iterable."
-name = "first"
-optional = false
-python-versions = "*"
-version = "2.0.2"
-
-[[package]]
-category = "main"
 description = "Clean single-source support for Python 3 and 2"
 name = "future"
 optional = false
@@ -697,7 +689,7 @@ pathspec = ">=0.5.3"
 pyyaml = "*"
 
 [metadata]
-content-hash = "216595a6c8e3d7006e8a998e21f63fbee8bbd646179bd81c8ee2a5c97d3b2405"
+content-hash = "66290887d2a6c0c442753e1249f93c48131afaba828e2b7272f91b7dab23c615"
 python-versions = "^3.6 || ^3.7 || ^3.8"
 
 [metadata.files]
@@ -815,10 +807,6 @@ cryptography = [
 dnspython = [
     {file = "dnspython-1.16.0-py2.py3-none-any.whl", hash = "sha256:f69c21288a962f4da86e56c4905b49d11aba7938d3d740e80d9e366ee4f1632d"},
     {file = "dnspython-1.16.0.zip", hash = "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01"},
-]
-first = [
-    {file = "first-2.0.2-py2.py3-none-any.whl", hash = "sha256:8d8e46e115ea8ac652c76123c0865e3ff18372aef6f03c22809ceefcea9dec86"},
-    {file = "first-2.0.2.tar.gz", hash = "sha256:ff285b08c55f8c97ce4ea7012743af2495c9f1291785f163722bd36f6af6d3bf"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
