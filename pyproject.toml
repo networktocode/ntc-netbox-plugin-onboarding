@@ -10,7 +10,6 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.6 || ^3.7 || ^3.8"
 invoke = "^1.4.1"
-first = "^2.0.2"
 napalm = "^2.5.0"
 
 [tool.poetry.dev-dependencies]

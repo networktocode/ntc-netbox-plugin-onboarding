@@ -20,10 +20,22 @@ class OnboardingTaskTable(BaseTable):
     """Table for displaying OnboardingTask instances."""
 
     site = tables.LinkColumn()
+    platform = tables.LinkColumn()
+    created_device = tables.LinkColumn()
 
     class Meta(BaseTable.Meta):  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
-        fields = ("pk", "created_on", "ip_address", "site", "platform", "device", "status", "failed_reason", "message")
+        fields = (
+            "pk",
+            "created_on",
+            "ip_address",
+            "site",
+            "platform",
+            "created_device",
+            "status",
+            "failed_reason",
+            "message",
+        )
 
 
 class OnboardingTaskFeedBulkTable(BaseTable):

@@ -117,7 +117,7 @@ class NetboxKeeperTestCase(TestCase):
 
         nbk.ensure_device_instance()
         self.assertIsInstance(nbk.device, Device)
-        self.assertEqual(nbk.device, nbk.netdev.ot.device)
+        self.assertEqual(nbk.device, nbk.netdev.ot.created_device)
         self.assertEqual(nbk.device.serial, "123456")
 
     def test_ensure_interface_not_exist(self):
