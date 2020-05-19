@@ -120,7 +120,17 @@ Each command can be executed with `invoke <command>`. All commands support the a
 For any questions or comments, please check the [FAQ](FAQ.md) first and feel free to swing by the [Network to Code slack channel](https://networktocode.slack.com/) (channel #networktocode).
 Sign up [here](http://slack.networktocode.com/)
 
-## Screenshot
+## Screenshots
+
+List of Onboarding Tasks
+![Onboarding Tasks](docs/images/onboarding_tasks_view.png)
+
+CSV form to import multiple devices
+![CSV Form](docs/images/csv_import_view.png)
 
 Onboard a single device
 ![Single Device Form](docs/images/single_device_form.png)
+
+Menu 
+![Menu](docs/images/menu.png)
+
