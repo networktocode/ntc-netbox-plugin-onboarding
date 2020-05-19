@@ -14,7 +14,7 @@ env:
 #   travis encrypt PYPI_TOKEN=<value> --add env.global --com
 # Might need to update it once the repo is publish (travis-ci.org vs travis-ci.com)
   global:
-    secure: dpSnHW9xP++k8AOfguX6poI3HdK0fxaWq4aHZCqxbSrNXzokcWf8y5PRMsDLdrbWMXG2JOmFl32bgsYXzcyHoopJwIsetOK97Sjq/Nd/Ycqne/bfXUyvqvF/wcpM9OHd+baHOk+yBVIoEe0fLZVo5gP7abP8ZFyjtyXRxP6zapq0cnxI0H6EPdNRiWJIa8gZT/RKFEeQHN6PIiF5dRNv1Bw0Gp43VT48t0MwhvnH8bT7a6SAZp/4aCNN6+yMPXcUTFyN+Pm+rFwoi7xVafpdFoZb4tOcVoTPQWRS7kcf4y+kvTuUWizumt7Oo5J2MyprAZsdWhp/4RGcwzdr371Bj9RyjH4lm+yf3uGw+k5SmQbbvg/5JXzCwHZxZCKl8w289iqWd024AprrkR20o3awxsTlobkE2+T8TU4w3pL/Rponu3B9VyI+I5WZshbM19nvhQHXmyWoNdtCFGri0dL9XYpLHqpiE+zD1ZsVMth4d+YZkI2Mj6eMiBVuVR5568TGqZ/qHE2dX3h0vkWIYFU0XFwx/P46kCxf89FfRD9GShahoBH2P+EFIiz1TcnnLbw/kyXleYVMWYIXYDoUT+f3Xs265nMqCXHdTA6GUlS8A79rttgouWN99KEo6EkF0o2ECiwSJfU/mq3Z5KWoHL97KlC6C9G+DxPCrLsvbOPCcm4=
+    secure: gE/KrxVCPfDItdRa0FV+49MQ0kfsEOMFdCd8Z6oETq6dqTPa7PpaCpQ2jJc72F3TYIVtV15ziCqF3m63fs+13kpbicvlBasXTjom8PV0n+mrLuMm+ejyFuXvRrIsS5GcLkf2THqJBfQRZEdJECiqwGQTbC0rH3icmbxk+KtlsDELGMmxPBdp+o9jxWrP+duKqlOi1kg/Q97gpwRo3fZCJZVtBWed/2Ha0+2Vc6nMFixzayab78gKocz//rx+xB+ODzqZBNUks9A0I2Nqw7Ano6/xVMWYPRMx/mhoyRe6tTMUA3AhkxHZAu89eJmW/fNPvC42Qos8V8aQzJnv0X8HWQl5QdypZZdHoOwVmi3CBVWAkUvazIj9PHX5hxsY3Svjnkq62Rmp1iF1Le87Uh8+N9rPWyZVtFwTqFD+ddT+/KHpdifD5y7dRwMiS5pbEZ01H6zIf3WvxvWUMI7Gm0SscZXWmV/s483Rlzz1wU1QgVF06SjrzcDsu/G6oR5JnZXk5L8mzrkslrRz5/DoP59i6gNpLrWTNnDTTgVxfC3RqumS3MtjM2Ap66WkZeqmxijsoqV8qZ//yKq2+wF6ZcQdSirUj1lUKDOUhWX33ls4pWt3zZIEAHni0yOecfiEJv6+vSWhPEgBHK+1sD/K6ilhHmN4NqJNkUEiLOw/+HU4AQs=
 services:
 - docker
 # --------------------------------------------------------------------------
@@ -35,9 +35,9 @@ script:
 deploy:
   provider: script
   script: poetry config pypi-token.pypi $PYPI_TOKEN && poetry publish --build
+  skip_cleanup: true
   on:
     tags: true
     branch: master
     condition: $NETBOX_VER = master
     python: 3.7
-    skip_cleanup: true
