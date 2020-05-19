@@ -24,7 +24,14 @@ from netbox_onboarding.utils.credentials import Credentials
 class OnboardingTaskSerializer(serializers.ModelSerializer):
     """Serializer for the OnboardingTask model."""
 
-    device = serializers.CharField(required=False, help_text="Planned device name",)
+    site = serializers.SlugRelatedField(
+        many=False,
+        read_only=False,
+        queryset=Site.objects.all(),
+        slug_field="slug",
+        required=True,
+        help_text="NetBox site 'slug' value",
+    )
 
     ip_address = serializers.CharField(required=True, help_text="IP Address to reach device",)
 
@@ -34,14 +41,9 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
 
     secret = serializers.CharField(required=False, write_only=True, help_text="Device secret password",)
 
-    site = serializers.SlugRelatedField(
-        many=False,
-        read_only=False,
-        queryset=Site.objects.all(),
-        slug_field="slug",
-        required=True,
-        help_text="NetBox site 'slug' value",
-    )
+    port = serializers.IntegerField(required=False, help_text="Device PORT to check for online")
+
+    timeout = serializers.IntegerField(required=False, help_text="Timeout (sec) for device connect")
 
     role = serializers.SlugRelatedField(
         many=False,
@@ -63,34 +65,32 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         help_text="NetBox Platform 'slug' value",
     )
 
-    status = serializers.CharField(required=False, help_text="Onboarding Status")
+    created_device = serializers.CharField(required=False, read_only=True, help_text="Created device name",)
 
-    failed_reason = serializers.CharField(required=False, help_text="Failure reason")
+    status = serializers.CharField(required=False, read_only=True, help_text="Onboarding Status")
 
-    message = serializers.CharField(required=False, help_text="Status message")
+    failed_reason = serializers.CharField(required=False, read_only=True, help_text="Failure reason")
 
-    port = serializers.IntegerField(required=False, help_text="Device PORT to check for online")
-
-    timeout = serializers.IntegerField(required=False, help_text="Timeout (sec) for device connect")
+    message = serializers.CharField(required=False, read_only=True, help_text="Status message")
 
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = [
             "id",
-            "device",
+            "site",
             "ip_address",
             "username",
             "password",
             "secret",
-            "site",
+            "port",
+            "timeout",
             "role",
             "device_type",
             "platform",
+            "created_device",
             "status",
             "failed_reason",
             "message",
-            "port",
-            "timeout",
         ]
 
     def create(self, validated_data):
