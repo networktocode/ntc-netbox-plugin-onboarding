@@ -13,7 +13,6 @@ limitations under the License.
 """
 
 import logging
-import os
 import re
 import socket
 
@@ -70,13 +69,14 @@ class OnboardException(Exception):
 class NetdevKeeper:
     """Used to maintain information about the network device during the onboarding process."""
 
-    def __init__(self, onboarding_task, username=None, password=None):
+    def __init__(self, onboarding_task, username=None, password=None, secret=None):
         """Initialize the network device keeper instance and ensure the required configuration parameters are provided.
 
         Args:
           onboarding_task (OnboardingTask): Task being processed
-          username (str): Device username (if unspecified, NAPALM_USERNAME environment variable will be used)
-          password (str): Device password (if unspecified, NAPALM_PASSWORD environment variable will be used)
+          username (str): Device username (if unspecified, NAPALM_USERNAME settings variable will be used)
+          password (str): Device password (if unspecified, NAPALM_PASSWORD settings variable will be used)
+          secret (str): Device secret password (if unspecified, NAPALM_ARGS["secret"] settings variable will be used)
 
         Raises:
           OnboardException('fail-config'):
@@ -92,8 +92,9 @@ class NetdevKeeper:
         self.serial_number = None
         self.mgmt_ifname = None
         self.mgmt_pflen = None
-        self.username = username or os.environ.get("NAPALM_USERNAME", None)
-        self.password = password or os.environ.get("NAPALM_PASSWORD", None)
+        self.username = username or settings.NAPALM_USERNAME
+        self.password = password or settings.NAPALM_PASSWORD
+        self.secret = secret or settings.NAPALM_ARGS.get("secret", None)
 
     def check_reachability(self):
         """Ensure that the device at the mgmt-ipaddr provided is reachable.
@@ -129,6 +130,7 @@ class NetdevKeeper:
             "host": kwargs.get("host"),
             "username": kwargs.get("username"),
             "password": kwargs.get("password"),
+            "secret": kwargs.get("secret"),
         }
 
         try:
@@ -159,7 +161,7 @@ class NetdevKeeper:
             platform_slug = self.ot.platform.slug
         else:
             platform_slug = self.guess_netmiko_device_type(
-                host=self.ot.ip_address, username=self.username, password=self.password
+                host=self.ot.ip_address, username=self.username, password=self.password, secret=self.secret,
             )
 
         logging.info("PLATFORM NAME is %s", platform_slug)
@@ -233,7 +235,15 @@ class NetdevKeeper:
                 )
 
             driver = get_network_driver(driver_name)
-            dev = driver(hostname=mgmt_ipaddr, username=self.username, password=self.password, timeout=self.ot.timeout)
+            optional_args = settings.NAPALM_ARGS.copy()
+            optional_args["secret"] = self.secret
+            dev = driver(
+                hostname=mgmt_ipaddr,
+                username=self.username,
+                password=self.password,
+                timeout=self.ot.timeout,
+                optional_args=optional_args,
+            )
 
             dev.open()
             logging.info("COLLECT: device facts")
@@ -265,16 +275,13 @@ class NetdevKeeper:
                         return (if_name, if_addr_data["prefix_length"])
             return (default_mgmt_if, default_mgmt_pfxlen)
 
-        mgmt_ifname, mgmt_pflen = get_mgmt_info()
-
         # retain the attributes that will be later used by NetBox processing.
 
         self.hostname = facts["hostname"]
         self.vendor = facts["vendor"].title()
         self.model = facts["model"].lower()
         self.serial_number = facts["serial_number"]
-        self.mgmt_ifname = mgmt_ifname
-        self.mgmt_pflen = mgmt_pflen
+        self.mgmt_ifname, self.mgmt_pflen = get_mgmt_info()
 
 
 # -----------------------------------------------------------------------------

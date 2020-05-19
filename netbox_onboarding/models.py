@@ -58,3 +58,7 @@ class OnboardingTask(models.Model):
 
     class Meta:  # noqa: D106 "missing docstring in public nested class"
         ordering = ["created_on"]
+
+    def __str__(self):
+        """String representation of an OnboardingTask."""
+        return f"{self.site} : {self.ip_address}"

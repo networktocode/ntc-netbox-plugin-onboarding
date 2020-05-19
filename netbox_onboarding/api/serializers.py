@@ -32,6 +32,8 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(required=False, write_only=True, help_text="Device password",)
 
+    secret = serializers.CharField(required=False, write_only=True, help_text="Device secret password",)
+
     site = serializers.SlugRelatedField(
         many=False,
         read_only=False,
@@ -63,7 +65,7 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
 
     status = serializers.CharField(required=False, help_text="Onboarding Status")
 
-    failed_raison = serializers.CharField(required=False, help_text="Failure reason")
+    failed_reason = serializers.CharField(required=False, help_text="Failure reason")
 
     message = serializers.CharField(required=False, help_text="Status message")
 
@@ -79,12 +81,13 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
             "ip_address",
             "username",
             "password",
+            "secret",
             "site",
             "role",
             "device_type",
             "platform",
             "status",
-            "failed_raison",
+            "failed_reason",
             "message",
             "port",
             "timeout",
@@ -95,8 +98,9 @@ class OnboardingTaskSerializer(serializers.ModelSerializer):
         # Fields are string-type so default to empty (instead of None)
         username = validated_data.pop("username", "")
         password = validated_data.pop("password", "")
+        secret = validated_data.pop("secret", "")
 
-        credentials = Credentials(username=username, password=password)
+        credentials = Credentials(username=username, password=password, secret=secret,)
 
         ot = OnboardingTask.objects.create(**validated_data)
 
