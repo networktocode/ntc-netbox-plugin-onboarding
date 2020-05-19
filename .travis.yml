@@ -21,7 +21,8 @@ services:
 # Tests
 # --------------------------------------------------------------------------
 before_script:
-- pip install invoke docker-compose poetry
+- pip install invoke docker-compose
+- curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 script:
 - invoke build --python-ver $TRAVIS_PYTHON_VERSION
 - invoke tests --python-ver $TRAVIS_PYTHON_VERSION
