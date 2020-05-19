@@ -28,11 +28,14 @@ script:
 # --------------------------------------------------------------------------
 # Deploy
 # --------------------------------------------------------------------------
+before_deploy:
+- poetry config pypi-token.pypi $PYPI_TOKEN
 deploy:
   provider: script
-  script: poetry publish --build -u __token__ -p $PYPI_TOKEN
+  script: poetry publish --build
   on:
     tags: true
     branch: master
     condition: $NETBOX_VER = master
     python: 3.7
+    skip_cleanup: true
