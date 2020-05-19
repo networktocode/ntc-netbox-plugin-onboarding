@@ -1,23 +1,40 @@
 ---
 language: python
-
 python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
-
+- '3.6'
+- '3.7'
+- '3.8'
+env:
 # Each version of NetBox listed here must have a corresponding directory/configuration file 
 # under development/netbox_<NETBOX_VER>/configuration.py
-env:
-- NETBOX_VER=v2.8.3
-- NETBOX_VER=master
-
+  matrix:
+  - NETBOX_VER=v2.8.3
+  - NETBOX_VER=master
+# Encrypted value for PYPI_TOKEN, this secret has been generated with the following command
+#   travis encrypt PYPI_TOKEN=<value> --add env.global --com
+# Might need to update it once the repo is publish (travis-ci.org vs travis-ci.com)
+  global:
+    secure: dpSnHW9xP++k8AOfguX6poI3HdK0fxaWq4aHZCqxbSrNXzokcWf8y5PRMsDLdrbWMXG2JOmFl32bgsYXzcyHoopJwIsetOK97Sjq/Nd/Ycqne/bfXUyvqvF/wcpM9OHd+baHOk+yBVIoEe0fLZVo5gP7abP8ZFyjtyXRxP6zapq0cnxI0H6EPdNRiWJIa8gZT/RKFEeQHN6PIiF5dRNv1Bw0Gp43VT48t0MwhvnH8bT7a6SAZp/4aCNN6+yMPXcUTFyN+Pm+rFwoi7xVafpdFoZb4tOcVoTPQWRS7kcf4y+kvTuUWizumt7Oo5J2MyprAZsdWhp/4RGcwzdr371Bj9RyjH4lm+yf3uGw+k5SmQbbvg/5JXzCwHZxZCKl8w289iqWd024AprrkR20o3awxsTlobkE2+T8TU4w3pL/Rponu3B9VyI+I5WZshbM19nvhQHXmyWoNdtCFGri0dL9XYpLHqpiE+zD1ZsVMth4d+YZkI2Mj6eMiBVuVR5568TGqZ/qHE2dX3h0vkWIYFU0XFwx/P46kCxf89FfRD9GShahoBH2P+EFIiz1TcnnLbw/kyXleYVMWYIXYDoUT+f3Xs265nMqCXHdTA6GUlS8A79rttgouWN99KEo6EkF0o2ECiwSJfU/mq3Z5KWoHL97KlC6C9G+DxPCrLsvbOPCcm4=
 services:
-  - docker
-
+- docker
+# --------------------------------------------------------------------------
+# Tests
+# --------------------------------------------------------------------------
 before_script:
-  - pip install invoke docker-compose poetry
-
+- pip install invoke docker-compose poetry
 script:
-  - invoke build --python-ver $TRAVIS_PYTHON_VERSION
-  - invoke tests --python-ver $TRAVIS_PYTHON_VERSION
+- invoke build --python-ver $TRAVIS_PYTHON_VERSION
+- invoke tests --python-ver $TRAVIS_PYTHON_VERSION
+# --------------------------------------------------------------------------
+# Deploy
+# --------------------------------------------------------------------------
+before_deploy:
+- poetry build
+deploy:
+  provider: script
+  script: poetry publish -u __token__ -p $PYPI_TOKEN
+  on:
+    tags: true
+    branch: master
+    condition: $NETBOX_VER = master
+    python: 3.7
