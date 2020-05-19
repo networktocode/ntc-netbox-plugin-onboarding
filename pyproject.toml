@@ -2,7 +2,7 @@
 name = "ntc-netbox-plugin-onboarding"
 version = "0.9.3"
 description = "A plugin for NetBox to easily onboard new devices."
-authors = ["Info <info@networktocode.com>"]
+authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 homepage = "https://github.com/networktocode/ntc-netbox-plugin-onboarding"
@@ -10,6 +10,8 @@ repository = "https://github.com/networktocode/ntc-netbox-plugin-onboarding"
 keywords = ["netbox", "network", "onboarding", "django"]
 include = [
     "LICENSE",
+    "README.md",
+    "docs/images/*",
 ]
 packages = [
     { include = "netbox_onboarding" },
