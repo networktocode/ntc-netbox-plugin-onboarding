@@ -13,7 +13,7 @@ limitations under the License.
 """
 import logging
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from utilities.views import BulkImportView, ObjectEditView, ObjectListView
+from utilities.views import BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
 
 from .filters import OnboardingTaskFilter
 from .forms import OnboardingTaskForm, OnboardingTaskFilterForm, OnboardingTaskFeedCSVForm
@@ -27,7 +27,7 @@ log.setLevel(logging.DEBUG)
 class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
     """View for listing all extant OnboardingTasks."""
 
-    permission_required = "dcim.view_device"
+    permission_required = "netbox_onboarding.view_onboardingtask"
     queryset = OnboardingTask.objects.all().order_by("-id")
     filterset = OnboardingTaskFilter
     filterset_form = OnboardingTaskFilterForm
@@ -38,7 +38,7 @@ class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
 class OnboardingTaskCreateView(PermissionRequiredMixin, ObjectEditView):
     """View for creating a new OnboardingTask."""
 
-    permission_required = "dcim.add_device"
+    permission_required = "netbox_onboarding.add_onboardingtask"
     model = OnboardingTask
     queryset = OnboardingTask.objects.all()
     model_form = OnboardingTaskForm
@@ -46,10 +46,19 @@ class OnboardingTaskCreateView(PermissionRequiredMixin, ObjectEditView):
     default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
 
 
+class OnboardingTaskBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
+    """View for deleting one or more OnboardingTasks."""
+
+    permission_required = "netbox_onboarding.delete_onboardingtask"
+    queryset = OnboardingTask.objects.filter()  # TODO: can we exclude currently-running tasks?
+    table = OnboardingTaskTable
+    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
+
+
 class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, BulkImportView):
     """View for bulk-importing a CSV file to create OnboardingTasks."""
 
-    permission_required = "dcim.add_device"
+    permission_required = "netbox_onboarding.add_onboardingtask"
     model_form = OnboardingTaskFeedCSVForm
     table = OnboardingTaskFeedBulkTable
     default_return_url = "plugins:netbox_onboarding:onboarding_task_list"

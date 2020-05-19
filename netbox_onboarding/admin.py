@@ -21,8 +21,6 @@ class OnboardingTaskAdmin(admin.ModelAdmin):
 
     list_display = (
         "pk",
-        "group_id",
-        "owner",
         "created_device",
         "ip_address",
         "site",

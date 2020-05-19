@@ -12,18 +12,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from django.db import models
-from django.contrib.auth.models import User
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 
 
 class OnboardingTask(models.Model):
     """The status of each onboarding Task is tracked in the OnboardingTask table."""
-
-    group_id = models.CharField(max_length=255, help_text="CSV Bulk Import Group ID (optional)", blank=True)
-
-    owner = models.ForeignKey(
-        to=User, on_delete=models.SET_NULL, help_text="CSV Bulk Task Owner (optional)", blank=True, null=True
-    )
 
     created_device = models.ForeignKey(to="dcim.Device", on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -65,3 +58,7 @@ class OnboardingTask(models.Model):
 
     class Meta:  # noqa: D106 "missing docstring in public nested class"
         ordering = ["created_on"]
+
+    def __str__(self):
+        """String representation of an OnboardingTask."""
+        return f"{self.site} : {self.ip_address}"
