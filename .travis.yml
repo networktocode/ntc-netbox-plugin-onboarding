@@ -28,11 +28,9 @@ script:
 # --------------------------------------------------------------------------
 # Deploy
 # --------------------------------------------------------------------------
-before_deploy:
-- poetry config pypi-token.pypi $PYPI_TOKEN
 deploy:
   provider: script
-  script: poetry publish --build
+  script: poetry config pypi-token.pypi $PYPI_TOKEN && poetry publish --build
   on:
     tags: true
     branch: master
