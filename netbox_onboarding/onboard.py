@@ -20,6 +20,7 @@ from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
 
 from django.conf import settings
+from django.utils.text import slugify
 
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
@@ -336,14 +337,14 @@ class NetboxKeeper:
         # instance.
 
         try:
-            self.manufacturer = Manufacturer.objects.get(slug=self.netdev.vendor.lower())
+            self.manufacturer = Manufacturer.objects.get(slug=slugify(self.netdev.vendor))
         except Manufacturer.DoesNotExist:
             if not create_manufacturer:
                 raise OnboardException(
                     reason="fail-config", message=f"ERROR manufacturer not found: {self.netdev.vendor}"
                 )
 
-            self.manufacturer = Manufacturer.objects.create(name=self.netdev.vendor, slug=self.netdev.vendor.lower())
+            self.manufacturer = Manufacturer.objects.create(name=self.netdev.vendor, slug=slugify(self.netdev.vendor))
             self.manufacturer.save()
 
         # Now see if the device type (slug) already exists,
@@ -357,7 +358,7 @@ class NetboxKeeper:
             logging.warning("device model is now: %s", self.netdev.model)
 
         try:
-            self.device_type = DeviceType.objects.get(slug=self.netdev.model.lower())
+            self.device_type = DeviceType.objects.get(slug=slugify(self.netdev.model))
             self.netdev.ot.device_type = self.device_type.slug
             self.netdev.ot.save()
         except DeviceType.DoesNotExist:
@@ -368,7 +369,7 @@ class NetboxKeeper:
 
             logging.info("CREATE: device-type: %s", self.netdev.model)
             self.device_type = DeviceType.objects.create(
-                slug=self.netdev.model.lower(), model=self.netdev.model.upper(), manufacturer=self.manufacturer
+                slug=slugify(self.netdev.model), model=self.netdev.model.upper(), manufacturer=self.manufacturer
             )
             self.device_type.save()
             self.netdev.ot.device_type = self.device_type.slug
@@ -400,14 +401,14 @@ class NetboxKeeper:
             return
 
         try:
-            device_role = DeviceRole.objects.get(slug=default_device_role)
+            device_role = DeviceRole.objects.get(slug=slugify(default_device_role))
         except DeviceRole.DoesNotExist:
             if not create_device_role:
                 raise OnboardException(
                     reason="fail-config", message=f"ERROR device role not found: {default_device_role}"
                 )
 
-            device_role = DeviceRole.objects.create(name=default_device_role, slug=default_device_role)
+            device_role = DeviceRole.objects.create(name=default_device_role, slug=slugify(default_device_role))
             device_role.save()
 
         self.netdev.ot.role = device_role
