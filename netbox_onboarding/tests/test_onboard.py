@@ -12,6 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from django.test import TestCase
+from django.utils.text import slugify
 
 from dcim.models import Site, Device, Interface, Manufacturer, DeviceType, DeviceRole, Platform
 from ipam.models import IPAddress
@@ -42,8 +43,8 @@ class NetboxKeeperTestCase(TestCase):
 
         self.ndk1 = NetdevKeeper(self.onboarding_task1)
         self.ndk1.hostname = "device1"
-        self.ndk1.vendor = "cisco"
-        self.ndk1.model = "csr1000v"
+        self.ndk1.vendor = "Cisco"
+        self.ndk1.model = "CSR1000v"
         self.ndk1.serial_number = "123456"
         self.ndk1.mgmt_ifname = "GigaEthernet0"
         self.ndk1.mgmt_pflen = 24
@@ -62,17 +63,19 @@ class NetboxKeeperTestCase(TestCase):
 
         with self.assertRaises(OnboardException) as exc_info:
             nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
-            self.assertEqual(exc_info.exception.message, "ERROR manufacturer not found: cisco")
+            self.assertEqual(exc_info.exception.message, "ERROR manufacturer not found: Cisco")
             self.assertEqual(exc_info.exception.reason, "fail-config")
 
         with self.assertRaises(OnboardException) as exc_info:
             nbk.ensure_device_type(create_manufacturer=True, create_device_type=False)
-            self.assertEqual(exc_info.exception.message, "ERROR device type not found: csr1000v")
+            self.assertEqual(exc_info.exception.message, "ERROR device type not found: CSR1000v")
             self.assertEqual(exc_info.exception.reason, "fail-config")
 
         nbk.ensure_device_type(create_manufacturer=True, create_device_type=True)
         self.assertIsInstance(nbk.manufacturer, Manufacturer)
         self.assertIsInstance(nbk.device_type, DeviceType)
+        self.assertEqual(nbk.manufacturer.slug, slugify(self.ndk1.vendor))
+        self.assertEqual(nbk.device_type.slug, slugify(self.ndk1.model))
 
     def test_ensure_device_type_present(self):
         """Verify ensure_device_type function when Manufacturer and DeviceType object are already present."""
@@ -91,9 +94,10 @@ class NetboxKeeperTestCase(TestCase):
             self.assertEqual(exc_info.exception.message, "ERROR device role not found: mytestrole")
             self.assertEqual(exc_info.exception.reason, "fail-config")
 
-        nbk.ensure_device_role(create_device_role=True, default_device_role="mytestrole")
+        role = "My-Test-Role"
+        nbk.ensure_device_role(create_device_role=True, default_device_role=role)
         self.assertIsInstance(nbk.netdev.ot.role, DeviceRole)
-        self.assertEqual(nbk.netdev.ot.role.slug, "mytestrole")
+        self.assertEqual(nbk.netdev.ot.role.slug, slugify(role))
 
     def test_ensure_device_role_exist(self):
         """Verify ensure_device_role function when DeviceRole exist but is not assigned to the OT."""
