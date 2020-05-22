@@ -386,12 +386,14 @@ class NetboxKeeper:
         self,
         create_device_role=PLUGIN_SETTINGS["create_device_role_if_missing"],
         default_device_role=PLUGIN_SETTINGS["default_device_role"],
+        default_device_role_color=PLUGIN_SETTINGS["default_device_role_color"],
     ):
         """Ensure that the device role is defined / exist in NetBox or create it if it doesn't exist.
 
         Args:
           create_device_role (bool) :Flag to indicate if we need to create the device_role, if not already present
           default_device_role (str): Default value for the device_role, if we need to create it
+          default_device_role_color (str): Default color to assign to the device_role, if we need to create it
         Raises:
           OnboardException('fail-config'):
             When the device role value does not exist
@@ -408,7 +410,12 @@ class NetboxKeeper:
                     reason="fail-config", message=f"ERROR device role not found: {default_device_role}"
                 )
 
-            device_role = DeviceRole.objects.create(name=default_device_role, slug=slugify(default_device_role))
+            device_role = DeviceRole.objects.create(
+                name=default_device_role,
+                slug=slugify(default_device_role),
+                color=default_device_role_color,
+                vm_role=False,
+            )
             device_role.save()
 
         self.netdev.ot.role = device_role
