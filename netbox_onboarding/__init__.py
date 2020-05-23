@@ -36,6 +36,7 @@ class OnboardingConfig(PluginConfig):
         "default_device_role_color": "FF0000",
         "default_management_interface": "PLACEHOLDER",
         "default_management_prefix_length": 0,
+        "default_device_status": "active",
     }
     caching_config = {}
 

@@ -119,8 +119,9 @@ class NetboxKeeperTestCase(TestCase):
         nbk.device_type = self.device_type1
         nbk.netdev.ot = self.onboarding_task3
 
-        nbk.ensure_device_instance()
+        nbk.ensure_device_instance(default_status="planned")
         self.assertIsInstance(nbk.device, Device)
+        self.assertEqual(nbk.device.status, "planned")
         self.assertEqual(nbk.device, nbk.netdev.ot.created_device)
         self.assertEqual(nbk.device.serial, "123456")
 
