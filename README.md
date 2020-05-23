@@ -15,6 +15,12 @@ The plugin is available as a Python package in pypi and can be installed with pi
 pip install ntc-netbox-plugin-onboarding
 ```
 
+To ensure NetBox Onboarding plugin is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the NetBox root directory (alongside `requirements.txt`) and list the `ntc-netbox-plugin-onboarding` package:
+
+```no-highlight
+# echo ntc-netbox-plugin-onboarding >> local_requirements.txt
+```
+
 Once installed, the plugin needs to be enabled in your `configuration.py`
 ```python
 # In your configuration.py
