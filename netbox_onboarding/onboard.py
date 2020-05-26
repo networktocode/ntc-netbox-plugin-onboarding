@@ -429,22 +429,17 @@ class NetboxKeeper:
           default_status (str) : status assigned to a new device by default.
         """
         try:
-            device = Device.objects.get(
-                name=self.netdev.hostname,
-                device_type=self.device_type,
-                device_role=self.netdev.ot.role,
-                site=self.netdev.ot.site,
-            )
+            device = Device.objects.get(name=self.netdev.hostname, site=self.netdev.ot.site)
         except Device.DoesNotExist:
             device = Device.objects.create(
                 name=self.netdev.hostname,
+                site=self.netdev.ot.site,
                 device_type=self.device_type,
                 device_role=self.netdev.ot.role,
-                platform=self.netdev.ot.platform,
-                site=self.netdev.ot.site,
                 status=default_status,
             )
 
+        device.platform = self.netdev.ot.platform
         device.serial = self.netdev.serial_number
         device.save()
 

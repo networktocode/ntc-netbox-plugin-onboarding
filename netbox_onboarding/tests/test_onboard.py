@@ -122,7 +122,30 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_device_instance(default_status="planned")
         self.assertIsInstance(nbk.device, Device)
         self.assertEqual(nbk.device.status, "planned")
+        self.assertEqual(nbk.device.platform, self.platform1)
         self.assertEqual(nbk.device, nbk.netdev.ot.created_device)
+        self.assertEqual(nbk.device.serial, "123456")
+
+    def test_ensure_device_instance_exist(self):
+        """Verify ensure_device_instance function."""
+
+        device = Device.objects.create(
+            name=self.ndk2.hostname,
+            site=self.site1,
+            device_type=self.device_type1,
+            device_role=self.device_role1,
+            status="planned",
+            serial="987654",
+        )
+
+        nbk = NetboxKeeper(self.ndk2)
+        nbk.netdev.ot = self.onboarding_task3
+        self.assertEqual(nbk.device, None)
+        nbk.ensure_device_instance(default_status="active")
+        self.assertIsInstance(nbk.device, Device)
+        self.assertEqual(nbk.device.status, "planned")
+        self.assertEqual(nbk.device.platform, self.platform1)
+        self.assertEqual(nbk.device, device)
         self.assertEqual(nbk.device.serial, "123456")
 
     def test_ensure_interface_not_exist(self):
