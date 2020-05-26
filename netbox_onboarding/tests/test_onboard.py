@@ -128,7 +128,6 @@ class NetboxKeeperTestCase(TestCase):
 
     def test_ensure_device_instance_exist(self):
         """Verify ensure_device_instance function."""
-
         device = Device.objects.create(
             name=self.ndk2.hostname,
             site=self.site1,
