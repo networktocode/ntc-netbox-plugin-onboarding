@@ -422,17 +422,24 @@ class NetboxKeeper:
         self.netdev.ot.save()
         return
 
-    def ensure_device_instance(self):
-        """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE."""
-        # TODO: this can create duplicate entries in NetBox...
-        device, _ = Device.objects.get_or_create(
-            name=self.netdev.hostname,
-            device_type=self.device_type,
-            device_role=self.netdev.ot.role,
-            platform=self.netdev.ot.platform,
-            site=self.netdev.ot.site,
-        )
+    def ensure_device_instance(self, default_status=PLUGIN_SETTINGS["default_device_status"]):
+        """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE.
 
+        Args:
+          default_status (str) : status assigned to a new device by default.
+        """
+        try:
+            device = Device.objects.get(name=self.netdev.hostname, site=self.netdev.ot.site)
+        except Device.DoesNotExist:
+            device = Device.objects.create(
+                name=self.netdev.hostname,
+                site=self.netdev.ot.site,
+                device_type=self.device_type,
+                device_role=self.netdev.ot.role,
+                status=default_status,
+            )
+
+        device.platform = self.netdev.ot.platform
         device.serial = self.netdev.serial_number
         device.save()
 
