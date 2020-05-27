@@ -136,7 +136,7 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
         help_text="Slug of device role. Define ONLY to override auto-recognition of role.",
         error_messages={"invalid_choice": "DeviceRole not found",},
     )
-    
+
     device_type = forms.ModelChoiceField(
         queryset=DeviceType.objects.all(),
         required=False,
