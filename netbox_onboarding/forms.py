@@ -137,6 +137,14 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
         error_messages={"invalid_choice": "DeviceRole not found",},
     )
 
+    device_type = forms.ModelChoiceField(
+        queryset=DeviceType.objects.all(),
+        required=False,
+        to_field_name="slug",
+        help_text="Slug of device type. Define ONLY to override auto-recognition of type.",
+        error_messages={"invalid_choice": "DeviceType not found",},
+    )
+
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
         fields = OnboardingTask.csv_headers
