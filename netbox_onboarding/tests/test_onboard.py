@@ -15,6 +15,7 @@ from socket import gaierror
 from unittest import mock
 from django.test import TestCase
 from django.utils.text import slugify
+from django.conf import settings
 
 from dcim.models import Site, Device, Interface, Manufacturer, DeviceType, DeviceRole, Platform
 from ipam.models import IPAddress
@@ -229,3 +230,28 @@ class NetboxKeeperTestCase(TestCase):
             ndk7.check_ip()
             self.assertEqual(exc_info.exception.reason, "fail-prefix")
             self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
+    def test_platform_map(self):
+        """Verify platform mapping functionality."""
+        # Create static mapping
+        platform_map = {"cisco-ios": "ios", "arista_eos": "eos", "cisco_nxos": "cisco-nxos"}
+
+        # Generate an instance of a Cisco IOS device with the mapping defined
+        self.ndk1 = NetdevKeeper(self.onboarding_task1)
+
+        #
+        # Test positive assertions
+        #
+
+        # Test Cisco_ios
+        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco-ios", test_platform_map=platform_map), "ios")
+        # Test Arista EOS
+        self.assertEqual(self.ndk1.check_netmiko_conversion("arista_eos", test_platform_map=platform_map), "eos")
+        # Test cisco_nxos
+        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco_nxos", test_platform_map=platform_map), "cisco-nxos")
+
+        #
+        # Test Negative assertion
+        #
+
+        # Test a non-converting item
+        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco-device-platform", test_platform_map=platform_map), "cisco-device-platform")

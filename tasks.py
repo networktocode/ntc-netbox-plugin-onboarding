@@ -283,7 +283,7 @@ def bandit(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     context.run(
-        f'{docker} sh -c "cd /source && bandit --recursive ./"',
+        f'{docker} sh -c "cd /source && bandit --configfile .bandit.yml --recursive ./"',
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )

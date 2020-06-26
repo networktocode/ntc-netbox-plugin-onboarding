@@ -125,6 +125,31 @@ class NetdevKeeper:
             raise OnboardException(reason="fail-connect", message=f"ERROR device unreachable: {ip_addr}:{port}")
 
     @staticmethod
+    def check_netmiko_conversion(guessed_device_type, test_platform_map=None):
+        """Method to convert Netmiko device type into the mapped type if defined in the settings file.
+
+        Args:
+            guessed_device_type (string): Netmiko device type guessed platform
+            test_platform_map (dict): Platform Map for use in testing
+
+        Returns:
+            string: Platform name
+        """
+        # Get the platform mapping defined by the configuration
+        if test_platform_map is None:
+            platform_map = PLUGIN_SETTINGS.get("platform_map", {})
+        else:
+            platform_map = test_platform_map
+
+        # If this is defined, process the mapping
+        if platform_map:
+            # Attempt to get a mapped slug. If there is no slug, return the guessed_device_type as the slug
+            return platform_map.get(guessed_device_type, guessed_device_type)
+
+        # There is no mapping configured, return what was brought in
+        return guessed_device_type
+
+    @staticmethod
     def guess_netmiko_device_type(**kwargs):
         """Guess the device type of host, based on Netmiko."""
         guessed_device_type = None
