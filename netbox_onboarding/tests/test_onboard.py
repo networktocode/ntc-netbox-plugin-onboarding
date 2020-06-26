@@ -15,7 +15,6 @@ from socket import gaierror
 from unittest import mock
 from django.test import TestCase
 from django.utils.text import slugify
-from django.conf import settings
 
 from dcim.models import Site, Device, Interface, Manufacturer, DeviceType, DeviceRole, Platform
 from ipam.models import IPAddress
@@ -254,4 +253,7 @@ class NetboxKeeperTestCase(TestCase):
         #
 
         # Test a non-converting item
-        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco-device-platform", test_platform_map=platform_map), "cisco-device-platform")
+        self.assertEqual(
+            self.ndk1.check_netmiko_conversion("cisco-device-platform", test_platform_map=platform_map),
+            "cisco-device-platform",
+        )
