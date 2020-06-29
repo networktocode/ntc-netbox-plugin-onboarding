@@ -18,6 +18,8 @@ import socket
 
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
+import netaddr
+from netaddr.core import AddrFormatError
 
 from django.conf import settings
 from django.utils.text import slugify
@@ -198,6 +200,38 @@ class NetdevKeeper:
 
         return platform
 
+    def check_ip(self):
+        """Method to check if the IP address form field was an IP address.
+
+        If it is a DNS name, attempt to resolve the DNS address and assign the IP address to the
+        name.
+
+        Returns:
+            (bool): True if the IP address is an IP address, or a DNS entry was found and
+                    reassignment of the ot.ip_address was done.
+                    False if unable to find a device IP (error)
+
+        """
+        # Assign checked_ip to None for error handling
+        checked_ip = None
+        try:
+            # If successful, this is an IP address and can pass
+            checked_ip = netaddr.IPNetwork(self.ot.ip_address)
+            return True
+        except AddrFormatError:
+            pass
+
+        # An IP address was not detected in the IP address field, attempt to find DNS
+        if checked_ip is None:
+            try:
+                # Do a lookup of name
+                checked_ip = socket.gethostbyname(self.ot.ip_address)
+                self.ot.ip_address = checked_ip
+                return True
+            except socket.gaierror:
+                # DNS Lookup has failed, not a DNS, do not do anything
+                return False
+
     def get_required_info(
         self,
         default_mgmt_if=PLUGIN_SETTINGS["default_management_interface"],
@@ -215,6 +249,8 @@ class NetdevKeeper:
           OnboardException('fail-general'):
             Any other unexpected device comms failure.
         """
+        # Check to see if the IP address entered was an IP address or a DNS entry, get the IP address
+        self.check_ip()
         self.check_reachability()
         mgmt_ipaddr = self.ot.ip_address
 
