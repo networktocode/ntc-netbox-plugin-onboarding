@@ -175,11 +175,8 @@ class NetdevKeeper:
 
         logging.info("INFO device type is %s", guessed_device_type)
 
-        # Get the platform map from the PLUGIN SETTINGS
-        platform_map = PLUGIN_SETTINGS.get("platform_map", {})
-
-        # Return the result of doing a check_netmiko_conversion
-        return self.check_netmiko_conversion(guessed_device_type, platform_map)
+        # Get the platform map from the PLUGIN SETTINGS, Return the result of doing a check_netmiko_conversion
+        return self.check_netmiko_conversion(guessed_device_type, platform_map=PLUGIN_SETTINGS.get("platform_map", {}))
 
     def get_platform_slug(self):
         """Get platform slug in netmiko format (ie cisco_ios, cisco_xr etc)."""

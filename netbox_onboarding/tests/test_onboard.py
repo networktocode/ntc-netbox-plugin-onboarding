@@ -242,11 +242,11 @@ class NetboxKeeperTestCase(TestCase):
         #
 
         # Test Cisco_ios
-        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco-ios", test_platform_map=platform_map), "ios")
+        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco-ios", platform_map=platform_map), "ios")
         # Test Arista EOS
-        self.assertEqual(self.ndk1.check_netmiko_conversion("arista_eos", test_platform_map=platform_map), "eos")
+        self.assertEqual(self.ndk1.check_netmiko_conversion("arista_eos", platform_map=platform_map), "eos")
         # Test cisco_nxos
-        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco_nxos", test_platform_map=platform_map), "cisco-nxos")
+        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco_nxos", platform_map=platform_map), "cisco-nxos")
 
         #
         # Test Negative assertion
@@ -254,6 +254,6 @@ class NetboxKeeperTestCase(TestCase):
 
         # Test a non-converting item
         self.assertEqual(
-            self.ndk1.check_netmiko_conversion("cisco-device-platform", test_platform_map=platform_map),
+            self.ndk1.check_netmiko_conversion("cisco-device-platform", platform_map=platform_map),
             "cisco-device-platform",
         )
