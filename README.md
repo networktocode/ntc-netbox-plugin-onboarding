@@ -35,6 +35,12 @@ PLUGINS = ["netbox_onboarding"]
 # }
 ```
 
+Finally, make sure to run the migrations for this plugin
+
+```bash
+python3 manage.py migrate
+```
+
 The plugin behavior can be controlled with the following list of settings
 
 - `create_platform_if_missing` boolean (default True), If True, a new platform object will be created if the platform discovered by netmiko do not already exist and is in the list of supported platforms (`cisco_ios`, `cisco_nxos`, `arista_eos`, `juniper_junos`, `cisco_xr`)
