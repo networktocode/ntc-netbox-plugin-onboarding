@@ -125,7 +125,7 @@ class NetdevKeeper:
             raise OnboardException(reason="fail-connect", message=f"ERROR device unreachable: {ip_addr}:{port}")
 
     @staticmethod
-    def check_netmiko_conversion(guessed_device_type, test_platform_map=None):
+    def check_netmiko_conversion(guessed_device_type, platform_map=None):
         """Method to convert Netmiko device type into the mapped type if defined in the settings file.
 
         Args:
@@ -135,12 +135,6 @@ class NetdevKeeper:
         Returns:
             string: Platform name
         """
-        # Get the platform mapping defined by the configuration
-        if test_platform_map is None:
-            platform_map = PLUGIN_SETTINGS.get("platform_map", {})
-        else:
-            platform_map = test_platform_map
-
         # If this is defined, process the mapping
         if platform_map:
             # Attempt to get a mapped slug. If there is no slug, return the guessed_device_type as the slug
@@ -149,8 +143,7 @@ class NetdevKeeper:
         # There is no mapping configured, return what was brought in
         return guessed_device_type
 
-    @staticmethod
-    def guess_netmiko_device_type(**kwargs):
+    def guess_netmiko_device_type(self, **kwargs):
         """Guess the device type of host, based on Netmiko."""
         guessed_device_type = None
 
@@ -182,7 +175,11 @@ class NetdevKeeper:
 
         logging.info("INFO device type is %s", guessed_device_type)
 
-        return guessed_device_type
+        # Get the platform map from the PLUGIN SETTINGS
+        platform_map = PLUGIN_SETTINGS.get("platform_map", {})
+
+        # Return the result of doing a check_netmiko_conversion
+        return self.check_netmiko_conversion(guessed_device_type, platform_map)
 
     def get_platform_slug(self):
         """Get platform slug in netmiko format (ie cisco_ios, cisco_xr etc)."""
