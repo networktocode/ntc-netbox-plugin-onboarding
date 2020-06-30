@@ -19,7 +19,6 @@ services:
     volumes:
       - ./base_configuration.py:/opt/netbox/netbox/netbox/base_configuration.py
       - ./netbox_${NETBOX_VER}/configuration.py:/opt/netbox/netbox/netbox/configuration.py
-      - ../netbox_onboarding:/source/netbox_onboarding
       - ../:/source
     tty: true
   worker:
