@@ -220,6 +220,9 @@ class NetdevKeeper:
         # An AddrFormatError exception means that there is not an IP address in the field, and should continue on
         except AddrFormatError:
             pass
+        # Catch when someone has put in a prefix address
+        except ValueError:
+            pass
 
         # An IP address was not detected in the IP address field, attempt to find DNS
         try:
