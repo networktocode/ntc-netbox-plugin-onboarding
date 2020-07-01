@@ -48,10 +48,15 @@ The plugin behavior can be controlled with the following list of settings
 - `default_management_prefix_length` integer ( default 0), length of the prefix that will be used for the management IP address, if the IP can't be found.
 
 ## Usage
+
 ### Preparation
 
-To work properly the plugin needs to know the Site, Platform, Device Type, Device Role of each device as well as its primary IP address.
-It's recommended to create these objects in NetBox ahead of time and to provide them when you want to start the onboarding process.
+To work properly the plugin needs to know the Site, Platform, Device Type, Device Role of each
+device as well as its primary IP address or DNS Name. It's recommended to create these objects in
+NetBox ahead of time and to provide them when you want to start the onboarding process.
+
+> For DNS Name Resolution to work, the instance of NetBox must be able to resolve the name of the
+> device to IP address.
 
 If `Platform`, `Device Type` and/or `Device Role` are not provided, the plugin will try to identify these information automatically and, based on the settings, it can create them in NetBox as needed.
 > If the Platform is provided, it must contains a valid Napalm driver available to the worker in Python

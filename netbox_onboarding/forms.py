@@ -29,7 +29,7 @@ BLANK_CHOICE = (("", "---------"),)
 class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
     """Form for creating a new OnboardingTask instance."""
 
-    ip_address = forms.CharField(required=True, label="IP address", help_text="IP address of the device to onboard")
+    ip_address = forms.CharField(required=True, label="IP address", help_text="IP Address/DNS Name of the device to onboard")
 
     site = forms.ModelChoiceField(required=True, queryset=Site.objects.all(), to_field_name="slug")
 

@@ -213,24 +213,23 @@ class NetdevKeeper:
 
         """
         # Assign checked_ip to None for error handling
-        checked_ip = None
         try:
             # If successful, this is an IP address and can pass
             checked_ip = netaddr.IPNetwork(self.ot.ip_address)
             return True
+        # An AddrFormatError exception means that there is not an IP address in the field, and should continue on
         except AddrFormatError:
             pass
 
         # An IP address was not detected in the IP address field, attempt to find DNS
-        if checked_ip is None:
-            try:
-                # Do a lookup of name
-                checked_ip = socket.gethostbyname(self.ot.ip_address)
-                self.ot.ip_address = checked_ip
-                return True
-            except socket.gaierror:
-                # DNS Lookup has failed, not a DNS, do not do anything
-                return False
+        try:
+            # Do a lookup of name
+            checked_ip = socket.gethostbyname(self.ot.ip_address)
+            self.ot.ip_address = checked_ip
+            return True
+        except socket.gaierror:
+            # DNS Lookup has failed, not a DNS, do not do anything
+            return False
 
     def get_required_info(
         self,
