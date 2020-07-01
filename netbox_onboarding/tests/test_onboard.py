@@ -203,7 +203,7 @@ class NetboxKeeperTestCase(TestCase):
 
         # Check that the IP address is returned
         self.assertTrue(ndk4.check_ip())
-        
+
         # Run the check to change the IP address
         ndk4.check_ip()
         self.assertEqual(ndk4.ot.ip_address, "192.0.2.1")
@@ -216,4 +216,3 @@ class NetboxKeeperTestCase(TestCase):
         ndk5 = NetdevKeeper(self.onboarding_task5)
 
         self.assertFalse(ndk5.check_ip())
-        
