@@ -192,17 +192,28 @@ class NetdevKeeper:
         return platform_slug
 
     @staticmethod
-    def get_platform_object_from_netbox(platform_slug):
+    def get_platform_object_from_netbox(platform_slug, create_platform_if_missing=PLUGIN_SETTINGS["create_platform_if_missing"] ):
         """Get platform object from NetBox filtered by platform_slug.
+        
+        Args:
+            platform_slug (string): slug of a platform object present in NetBox, object will be created if not present
+            and create_platform_if_missing is enabled
+
+        Return:
+            dcim.models.Platform object
+
+        Raises:
+            OnboardException 
 
         Lookup is performed based on the object's slug field (not the name field)
         """
         try:
+            # Get the platform from the NetBox DB
             platform = Platform.objects.get(slug=platform_slug)
             logging.info("PLATFORM: found in NetBox %s", platform_slug)
         except Platform.DoesNotExist:
 
-            if not PLUGIN_SETTINGS["create_platform_if_missing"]:
+            if not create_platform_if_missing:
                 raise OnboardException(
                     reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_slug}"
                 )
@@ -217,6 +228,13 @@ class NetdevKeeper:
                 name=platform_slug, slug=platform_slug, napalm_driver=NETMIKO_TO_NAPALM[platform_slug]
             )
             platform.save()
+
+        else:
+            if not platform.napalm_driver:
+                raise OnboardException(
+                    reason="fail-general",
+                    message=f"ERROR platform is missing the NAPALM Driver: {platform_slug}",
+                )
 
         return platform
 

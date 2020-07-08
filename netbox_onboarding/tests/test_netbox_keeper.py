@@ -32,6 +32,7 @@ class NetboxKeeperTestCase(TestCase):
 
         self.manufacturer1 = Manufacturer.objects.create(name="Juniper", slug="juniper")
         self.platform1 = Platform.objects.create(name="JunOS", slug="junos")
+        self.platform2 = Platform.objects.create(name="Cisco NX-OS", slug="cisco-nx-os")
         self.device_type1 = DeviceType.objects.create(slug="srx3600", model="SRX3600", manufacturer=self.manufacturer1)
         self.device_role1 = DeviceRole.objects.create(name="Firewall", slug="firewall")
 
@@ -45,9 +46,11 @@ class NetboxKeeperTestCase(TestCase):
         self.onboarding_task4 = OnboardingTask.objects.create(
             ip_address="ntc123.local", site=self.site1, role=self.device_role1, platform=self.platform1
         )
-
         self.onboarding_task5 = OnboardingTask.objects.create(
             ip_address="bad.local", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
+        self.onboarding_task6 = OnboardingTask.objects.create(
+            ip_address="192.0.2.2", site=self.site1, role=self.device_role1, platform=self.platform2
         )
         self.onboarding_task7 = OnboardingTask.objects.create(
             ip_address="192.0.2.1/32", site=self.site1, role=self.device_role1, platform=self.platform1
@@ -229,6 +232,7 @@ class NetboxKeeperTestCase(TestCase):
             ndk7.check_ip()
             self.assertEqual(exc_info.exception.reason, "fail-prefix")
             self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
+
     def test_platform_map(self):
         """Verify platform mapping functionality."""
         # Create static mapping
