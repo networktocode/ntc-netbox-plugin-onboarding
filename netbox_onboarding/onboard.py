@@ -50,6 +50,7 @@ class OnboardException(Exception):
         "fail-connect",  # device is unreachable at IP:PORT
         "fail-execute",  # unable to execute device/API command
         "fail-login",  # bad username/password
+        "fail-dns",  # failed to get IP address from name resolution
         "fail-general",  # other error
     )
 
@@ -211,6 +212,11 @@ class NetdevKeeper:
                     reassignment of the ot.ip_address was done.
                     False if unable to find a device IP (error)
 
+        Raises:
+          OnboardException("fail-general"):
+            When a prefix was entered for an IP address
+          OnboardException("fail-dns"):
+            When a Name lookup via DNS fails to resolve an IP address
         """
         try:
             # Assign checked_ip to None for error handling
@@ -220,7 +226,7 @@ class NetdevKeeper:
         # Catch when someone has put in a prefix address, raise an exception
         except ValueError:
             raise OnboardException(
-                reason="fail-prefix", message=f"ERROR appears a prefix was entered: {self.ot.ip_address}"
+                reason="fail-general", message=f"ERROR appears a prefix was entered: {self.ot.ip_address}"
             )
         # An AddrFormatError exception means that there is not an IP address in the field, and should continue on
         except AddrFormatError:
