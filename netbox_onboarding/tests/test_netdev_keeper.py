@@ -14,7 +14,6 @@ limitations under the License.
 from django.test import TestCase
 
 from dcim.models import Platform
-from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.onboard import NetdevKeeper, OnboardException
 
 
@@ -25,9 +24,9 @@ class NetdevKeeperTestCase(TestCase):
         """Create a superuser and token for API calls."""
         self.platform1 = Platform.objects.create(name="JunOS", slug="junos", napalm_driver="junos")
         self.platform2 = Platform.objects.create(name="Cisco NX-OS", slug="cisco-nx-os")
-        
 
     def test_get_platform_object_from_netbox(self):
+        """Test of platform object from netbox."""
         # Test assigning platform
         platform = NetdevKeeper.get_platform_object_from_netbox("junos", create_platform_if_missing=False)
         self.assertIsInstance(platform, Platform)
@@ -40,7 +39,10 @@ class NetdevKeeperTestCase(TestCase):
         # Test failed unable to find the device and not part of the NETMIKO TO NAPALM keys
         with self.assertRaises(OnboardException) as exc_info:
             platform = NetdevKeeper.get_platform_object_from_netbox("notthere", create_platform_if_missing=True)
-            self.assertEqual(exc_info.exception.message, "ERROR platform not found in NetBox and it's eligible for auto-creation: notthere")
+            self.assertEqual(
+                exc_info.exception.message,
+                "ERROR platform not found in NetBox and it's eligible for auto-creation: notthere",
+            )
             self.assertEqual(exc_info.exception.reason, "fail-general")
 
         # Test searching for an object, does not exist, but create_platform is false
@@ -48,7 +50,7 @@ class NetdevKeeperTestCase(TestCase):
             platform = NetdevKeeper.get_platform_object_from_netbox("cisco_ios", create_platform_if_missing=False)
             self.assertEqual(exc_info.exception.message, "ERROR platform not found in NetBox: cisco_ios")
             self.assertEqual(exc_info.exception.reason, "fail-general")
-        
+
         # Test NAPALM Driver not defined in NetBox
         with self.assertRaises(OnboardException) as exc_info:
             platform = NetdevKeeper.get_platform_object_from_netbox("cisco-nx-os", create_platform_if_missing=False)
