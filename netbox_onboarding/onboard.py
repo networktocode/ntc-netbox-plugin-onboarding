@@ -212,27 +212,28 @@ class NetdevKeeper:
                     False if unable to find a device IP (error)
 
         """
-        # Assign checked_ip to None for error handling
         try:
+            # Assign checked_ip to None for error handling
             # If successful, this is an IP address and can pass
-            checked_ip = netaddr.IPNetwork(self.ot.ip_address)
+            checked_ip = netaddr.IPAddress(self.ot.ip_address)
             return True
+        # Catch when someone has put in a prefix address, raise an exception
+        except ValueError:
+            raise OnboardException(
+                reason="fail-prefix", message=f"ERROR appears a prefix was entered: {self.ot.ip_address}"
+            )
         # An AddrFormatError exception means that there is not an IP address in the field, and should continue on
         except AddrFormatError:
-            pass
-        # Catch when someone has put in a prefix address
-        except ValueError:
-            pass
-
-        # An IP address was not detected in the IP address field, attempt to find DNS
-        try:
-            # Do a lookup of name
-            checked_ip = socket.gethostbyname(self.ot.ip_address)
-            self.ot.ip_address = checked_ip
-            return True
-        except socket.gaierror:
-            # DNS Lookup has failed, not a DNS, do not do anything
-            return False
+            try:
+                # Do a lookup of name to get the IP address to connect to
+                checked_ip = socket.gethostbyname(self.ot.ip_address)
+                self.ot.ip_address = checked_ip
+                return True
+            except socket.gaierror:
+                # DNS Lookup has failed, Raise an exception for unable to complete DNS lookup
+                raise OnboardException(
+                    reason="fail-dns", message=f"ERROR failed to complete DNS lookup: {self.ot.ip_address}"
+                )
 
     def get_required_info(
         self,
@@ -512,5 +513,6 @@ class NetboxKeeper:
         self.ensure_device_type()
         self.ensure_device_role()
         self.ensure_device_instance()
-        self.ensure_interface()
-        self.ensure_primary_ip()
+        if PLUGIN_SETTINGS["create_management_interface_if_missing"]:
+            self.ensure_interface()
+            self.ensure_primary_ip()

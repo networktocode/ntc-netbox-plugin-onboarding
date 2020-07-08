@@ -49,6 +49,9 @@ class NetboxKeeperTestCase(TestCase):
         self.onboarding_task5 = OnboardingTask.objects.create(
             ip_address="bad.local", site=self.site1, role=self.device_role1, platform=self.platform1
         )
+        self.onboarding_task7 = OnboardingTask.objects.create(
+            ip_address="192.0.2.1/32", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
 
         self.ndk1 = NetdevKeeper(self.onboarding_task1)
         self.ndk1.hostname = "device1"
@@ -181,7 +184,7 @@ class NetboxKeeperTestCase(TestCase):
         self.assertEqual(nbk.interface, intf)
 
     def test_ensure_primary_ip_not_exist(self):
-        """Verify ensure_primary_ip function when the Ip address do not already exist."""
+        """Verify ensure_primary_ip function when the IP address do not already exist."""
         nbk = NetboxKeeper(self.ndk2)
         nbk.device_type = self.device_type1
         nbk.netdev.ot = self.onboarding_task3
@@ -213,6 +216,16 @@ class NetboxKeeperTestCase(TestCase):
         # Look up a failed response
         mock_get_hostbyname.side_effect = gaierror(8)
         ndk5 = NetdevKeeper(self.onboarding_task5)
+        ndk7 = NetdevKeeper(self.onboarding_task7)
 
-        self.assertFalse(ndk5.check_ip())
-        self.assertEqual(ndk5.ot.ip_address, "bad.local")
+        # Check for bad.local raising an exception
+        with self.assertRaises(OnboardException) as exc_info:
+            ndk5.check_ip()
+            self.assertEqual(exc_info.exception.message, "ERROR failed to complete DNS lookup: bad.local")
+            self.assertEqual(exc_info.exception.reason, "fail-dns")
+
+        # Check for exception with prefix address entered
+        with self.assertRaises(OnboardException) as exc_info:
+            ndk7.check_ip()
+            self.assertEqual(exc_info.exception.reason, "fail-prefix")
+            self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
