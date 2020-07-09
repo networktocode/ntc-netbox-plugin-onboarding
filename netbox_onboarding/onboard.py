@@ -125,7 +125,25 @@ class NetdevKeeper:
             raise OnboardException(reason="fail-connect", message=f"ERROR device unreachable: {ip_addr}:{port}")
 
     @staticmethod
-    def guess_netmiko_device_type(**kwargs):
+    def check_netmiko_conversion(guessed_device_type, platform_map=None):
+        """Method to convert Netmiko device type into the mapped type if defined in the settings file.
+
+        Args:
+            guessed_device_type (string): Netmiko device type guessed platform
+            test_platform_map (dict): Platform Map for use in testing
+
+        Returns:
+            string: Platform name
+        """
+        # If this is defined, process the mapping
+        if platform_map:
+            # Attempt to get a mapped slug. If there is no slug, return the guessed_device_type as the slug
+            return platform_map.get(guessed_device_type, guessed_device_type)
+
+        # There is no mapping configured, return what was brought in
+        return guessed_device_type
+
+    def guess_netmiko_device_type(self, **kwargs):
         """Guess the device type of host, based on Netmiko."""
         guessed_device_type = None
 
@@ -157,7 +175,8 @@ class NetdevKeeper:
 
         logging.info("INFO device type is %s", guessed_device_type)
 
-        return guessed_device_type
+        # Get the platform map from the PLUGIN SETTINGS, Return the result of doing a check_netmiko_conversion
+        return self.check_netmiko_conversion(guessed_device_type, platform_map=PLUGIN_SETTINGS.get("platform_map", {}))
 
     def get_platform_slug(self):
         """Get platform slug in netmiko format (ie cisco_ios, cisco_xr etc)."""
@@ -173,17 +192,30 @@ class NetdevKeeper:
         return platform_slug
 
     @staticmethod
-    def get_platform_object_from_netbox(platform_slug):
+    def get_platform_object_from_netbox(
+        platform_slug, create_platform_if_missing=PLUGIN_SETTINGS["create_platform_if_missing"]
+    ):
         """Get platform object from NetBox filtered by platform_slug.
+
+        Args:
+            platform_slug (string): slug of a platform object present in NetBox, object will be created if not present
+            and create_platform_if_missing is enabled
+
+        Return:
+            dcim.models.Platform object
+
+        Raises:
+            OnboardException
 
         Lookup is performed based on the object's slug field (not the name field)
         """
         try:
+            # Get the platform from the NetBox DB
             platform = Platform.objects.get(slug=platform_slug)
             logging.info("PLATFORM: found in NetBox %s", platform_slug)
         except Platform.DoesNotExist:
 
-            if not PLUGIN_SETTINGS["create_platform_if_missing"]:
+            if not create_platform_if_missing:
                 raise OnboardException(
                     reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_slug}"
                 )
@@ -198,6 +230,12 @@ class NetdevKeeper:
                 name=platform_slug, slug=platform_slug, napalm_driver=NETMIKO_TO_NAPALM[platform_slug]
             )
             platform.save()
+
+        else:
+            if not platform.napalm_driver:
+                raise OnboardException(
+                    reason="fail-general", message=f"ERROR platform is missing the NAPALM Driver: {platform_slug}",
+                )
 
         return platform
 

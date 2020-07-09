@@ -39,6 +39,7 @@ class OnboardingConfig(PluginConfig):
         "default_management_prefix_length": 0,
         "default_device_status": "active",
         "create_management_interface_if_missing": True,
+        "platform_map": {},
     }
     caching_config = {}
 
