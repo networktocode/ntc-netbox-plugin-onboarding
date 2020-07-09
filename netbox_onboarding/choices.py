@@ -39,6 +39,7 @@ class OnboardingFailChoices(ChoiceSet):
     FAIL_CONNECT = "fail-connect"
     FAIL_EXECUTE = "fail-execute"
     FAIL_GENERAL = "fail-general"
+    FAIL_DNS = "fail-dns"
 
     CHOICES = (
         (FAIL_LOGIN, "fail-login"),
@@ -46,4 +47,5 @@ class OnboardingFailChoices(ChoiceSet):
         (FAIL_CONNECT, "fail-connect"),
         (FAIL_EXECUTE, "fail-execute"),
         (FAIL_GENERAL, "fail-general"),
+        (FAIL_DNS, "fail-dns"),
     )

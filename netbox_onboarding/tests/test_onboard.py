@@ -11,6 +11,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from socket import gaierror
+from unittest import mock
 from django.test import TestCase
 from django.utils.text import slugify
 
@@ -39,6 +41,16 @@ class NetboxKeeperTestCase(TestCase):
         )
         self.onboarding_task3 = OnboardingTask.objects.create(
             ip_address="192.168.1.2", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
+        self.onboarding_task4 = OnboardingTask.objects.create(
+            ip_address="ntc123.local", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
+
+        self.onboarding_task5 = OnboardingTask.objects.create(
+            ip_address="bad.local", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
+        self.onboarding_task7 = OnboardingTask.objects.create(
+            ip_address="192.0.2.1/32", site=self.site1, role=self.device_role1, platform=self.platform1
         )
 
         self.ndk1 = NetdevKeeper(self.onboarding_task1)
@@ -172,7 +184,7 @@ class NetboxKeeperTestCase(TestCase):
         self.assertEqual(nbk.interface, intf)
 
     def test_ensure_primary_ip_not_exist(self):
-        """Verify ensure_primary_ip function when the Ip address do not already exist."""
+        """Verify ensure_primary_ip function when the IP address do not already exist."""
         nbk = NetboxKeeper(self.ndk2)
         nbk.device_type = self.device_type1
         nbk.netdev.ot = self.onboarding_task3
@@ -182,3 +194,38 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_primary_ip()
         self.assertIsInstance(nbk.primary_ip, IPAddress)
         self.assertEqual(nbk.primary_ip.interface, nbk.interface)
+
+    @mock.patch("netbox_onboarding.onboard.socket.gethostbyname")
+    def test_check_ip(self, mock_get_hostbyname):
+        """Check DNS to IP address."""
+        # Look up response value
+        mock_get_hostbyname.return_value = "192.0.2.1"
+
+        # Create a Device Keeper object of the device
+        ndk4 = NetdevKeeper(self.onboarding_task4)
+
+        # Check that the IP address is returned
+        self.assertTrue(ndk4.check_ip())
+
+        # Run the check to change the IP address
+        self.assertEqual(ndk4.ot.ip_address, "192.0.2.1")
+
+    @mock.patch("netbox_onboarding.onboard.socket.gethostbyname")
+    def test_failed_check_ip(self, mock_get_hostbyname):
+        """Check DNS to IP address failing."""
+        # Look up a failed response
+        mock_get_hostbyname.side_effect = gaierror(8)
+        ndk5 = NetdevKeeper(self.onboarding_task5)
+        ndk7 = NetdevKeeper(self.onboarding_task7)
+
+        # Check for bad.local raising an exception
+        with self.assertRaises(OnboardException) as exc_info:
+            ndk5.check_ip()
+            self.assertEqual(exc_info.exception.message, "ERROR failed to complete DNS lookup: bad.local")
+            self.assertEqual(exc_info.exception.reason, "fail-dns")
+
+        # Check for exception with prefix address entered
+        with self.assertRaises(OnboardException) as exc_info:
+            ndk7.check_ip()
+            self.assertEqual(exc_info.exception.reason, "fail-prefix")
+            self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
