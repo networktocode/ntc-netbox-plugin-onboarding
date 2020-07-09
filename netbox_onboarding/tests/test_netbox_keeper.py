@@ -234,7 +234,7 @@ class NetboxKeeperTestCase(TestCase):
             self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
 
     def test_platform_map(self):
-        """Verify platform mapping functionality."""
+        """Verify platform mapping of netmiko to slug functionality."""
         # Create static mapping
         platform_map = {"cisco_ios": "ios", "arista_eos": "eos", "cisco_nxos": "cisco-nxos"}
 
