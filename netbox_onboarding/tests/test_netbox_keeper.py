@@ -261,3 +261,38 @@ class NetboxKeeperTestCase(TestCase):
             self.ndk1.check_netmiko_conversion("cisco-device-platform", platform_map=platform_map),
             "cisco-device-platform",
         )
+
+    @mock.patch("netbox_onboarding.onboard.socket.gethostbyname")
+    def test_check_ip(self, mock_get_hostbyname):
+        """Check DNS to IP address."""
+        # Look up response value
+        mock_get_hostbyname.return_value = "192.0.2.1"
+
+        # Create a Device Keeper object of the device
+        ndk4 = NetdevKeeper(self.onboarding_task4)
+
+        # Check that the IP address is returned
+        self.assertTrue(ndk4.check_ip())
+
+        # Run the check to change the IP address
+        self.assertEqual(ndk4.ot.ip_address, "192.0.2.1")
+
+    @mock.patch("netbox_onboarding.onboard.socket.gethostbyname")
+    def test_failed_check_ip(self, mock_get_hostbyname):
+        """Check DNS to IP address failing."""
+        # Look up a failed response
+        mock_get_hostbyname.side_effect = gaierror(8)
+        ndk5 = NetdevKeeper(self.onboarding_task5)
+        ndk7 = NetdevKeeper(self.onboarding_task7)
+
+        # Check for bad.local raising an exception
+        with self.assertRaises(OnboardException) as exc_info:
+            ndk5.check_ip()
+            self.assertEqual(exc_info.exception.message, "ERROR failed to complete DNS lookup: bad.local")
+            self.assertEqual(exc_info.exception.reason, "fail-dns")
+
+        # Check for exception with prefix address entered
+        with self.assertRaises(OnboardException) as exc_info:
+            ndk7.check_ip()
+            self.assertEqual(exc_info.exception.reason, "fail-prefix")
+            self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
