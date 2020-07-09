@@ -236,7 +236,7 @@ class NetboxKeeperTestCase(TestCase):
     def test_platform_map(self):
         """Verify platform mapping functionality."""
         # Create static mapping
-        platform_map = {"cisco-ios": "ios", "arista_eos": "eos", "cisco_nxos": "cisco-nxos"}
+        platform_map = {"cisco_ios": "ios", "arista_eos": "eos", "cisco_nxos": "cisco-nxos"}
 
         # Generate an instance of a Cisco IOS device with the mapping defined
         self.ndk1 = NetdevKeeper(self.onboarding_task1)
@@ -246,7 +246,7 @@ class NetboxKeeperTestCase(TestCase):
         #
 
         # Test Cisco_ios
-        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco-ios", platform_map=platform_map), "ios")
+        self.assertEqual(self.ndk1.check_netmiko_conversion("cisco_ios", platform_map=platform_map), "ios")
         # Test Arista EOS
         self.assertEqual(self.ndk1.check_netmiko_conversion("arista_eos", platform_map=platform_map), "eos")
         # Test cisco_nxos
