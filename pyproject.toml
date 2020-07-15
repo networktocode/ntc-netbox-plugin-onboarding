@@ -21,6 +21,8 @@ packages = [
 python = "^3.6 || ^3.7 || ^3.8"
 invoke = "^1.4.1"
 napalm = "^2.5.0"
+pyats = "^20.6"
+genie = "^20.6.1"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"

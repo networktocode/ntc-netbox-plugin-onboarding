@@ -59,6 +59,7 @@ The plugin behavior can be controlled with the following list of settings
       <Netmiko Platform>: <NetBox Slug> 
     }
     ```
+- `stack_separator` string, default of `:` recommended single character that will differentiate units within a stack. See section on Stack additions.
 
 ## Usage
 
@@ -85,15 +86,52 @@ During a successful onboarding process, a new device will be created in NetBox w
 
 > By default, the plugin is using the credentials defined in the main `configuration.py` for Napalm (`NAPALM_USERNAME`/`NAPALM_PASSWORD`). It's possible to define specific credentials for each onboarding task.
 
+## Stack Platforms
+
+Onboarding plugin now supports the onboarding of specifically tested platforms. These will be added to NetBox as
+individual devices. The primary (first) unit in the stack will:
+
+- Have the primary IP address associated (if configured, defaults to yes)
+- Will **not** have the `stack_separator` in the name of the device, by using colon (:) this would
+override any default application port with automation systems.
+
+All of the additional units will have the separator_indicator separating the name from the unit
+number. There **will not** be a primary IP address assigned to the unit. Assuming that there is a
+methodology to parse each of the model numbers and serial numbers from a command output, there will
+be added in about the device that is unique to the device of serial number, model number.
+
+> The idea of the stacking is that there is a single management IP address for multiple switch
+> units. Thus there will not be hte primary IP and is tracked for physical inventory, but not for
+> logical inventory.
+
+So if there was a switch stack with 4 units being added, using the defaults you will have the
+following setup:  
+
+Device Name: nyc01-sw01
+Units: 4
+Stack IP Address: 192.0.2.10/24
+
+| NetBox Device Name | Primary IP Address | Model Number     | Serial Number  | Notes                                            |
+| ------------------ | ------------------ | ---------------- | -------------- | ------------------------------------------------ |
+| nyc01-sw01         | 192.0.2.10/24      | Unique to Unit 1 | Unique to unit | This **should** be used for connecting to device |
+| nyc01-sw01:2       | -                  | Unique to Unit 2 | Unique to unit | No address will be available to connect to       |
+| nyc01-sw01:3       | -                  | Unique to Unit 3 | Unique to unit | No address will be available to connect to       |
+| nyc01-sw01:4       | -                  | Unique to Unit 4 | Unique to unit | No address will be available to connect to       |
+
+### Tested Stack Platforms
+
+These are the list of tested stacking platforms. This should help to provide confidence in what platforms can be
+onboarded as a stack. Additional testing specifics can be found [here](docs/testing_parsers.md) in the `docs\`.
+
 ### Consult the status of onboarding tasks
 
-The status of the onboarding process for each device is maintained is a dedicated table in NetBox and can be retrived :
+The status of the onboarding process for each device is maintained is a dedicated table in NetBox and can be retrieved :
 - Via the UI `/plugins/onboarding/`
 - Via the API `GET /api/plugins​/onboarding​/onboarding​/`
 
 ### API
 
-The plugin includes 4 API endpoints to manage the onbarding tasks
+The plugin includes 4 API endpoints to manage the onboarding tasks
 
 ```shell
 GET        /api/plugins​/onboarding​/onboarding​/       Check status of all onboarding tasks.

@@ -15,6 +15,7 @@ limitations under the License.
 import logging
 import re
 import socket
+import importlib
 
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
@@ -99,6 +100,15 @@ class NetdevKeeper:
         self.username = username or settings.NAPALM_USERNAME
         self.password = password or settings.NAPALM_PASSWORD
         self.secret = secret or settings.NAPALM_ARGS.get("secret", None)
+        self.devices_dict = {}
+
+    def device_count(self):
+        """Return the device count discovered"""
+        return len(self.devices_dict.keys())
+
+    def get_devices(self):
+        return self.devices_dict
+
 
     def check_reachability(self):
         """Ensure that the device at the mgmt-ipaddr provided is reachable.
@@ -330,11 +340,31 @@ class NetdevKeeper:
             )
 
             dev.open()
-            logging.info("COLLECT: device facts")
+            # Get Device Facts from NAPALM
+            logging.info("NAPALM COLLECT: device facts")
             facts = dev.get_facts()
 
-            logging.info("COLLECT: device interface IPs")
+            # Get Device IP addresses and Interfaces from NAPALM
+            logging.info("NAPALM COLLECT: device interface IPs")
             ip_ifs = dev.get_interfaces_ip()
+
+            # Get show version from the device
+            try:
+                logging.info("NAPALM CLI: gathering NAPALM extensions")
+
+                # Set the module name to the file in the napalm addons directory that matches driver name
+                module_name = f"ntc-netbox-plugin-onboarding.napalm_addons.{driver_name}"
+
+                # Import the module and assign the driver addon class
+                module = importlib.import_module(module_name)
+                driver_addon_class = module.NaplamDeviceExtensions(napalm_device=dev)
+
+                # Get the appropriate show command and parse the output
+                driver_addon_class.get_stack_commands_output()
+                self.devices_dict = driver_addon_class.parse_stack_commands()
+
+            except ConnectionException as exc:
+                pass
 
         except ConnectionException as exc:
             raise OnboardException(reason="fail-login", message=exc.args[0])
@@ -378,13 +408,14 @@ class NetdevKeeper:
 class NetboxKeeper:
     """Used to manage the information relating to the network device within the NetBox server."""
 
-    def __init__(self, netdev):
+    def __init__(self, netdev, device_num=None):
         """Create an instance and initialize the managed attributes that are used throughout the onboard processing.
 
         Args:
           netdev (NetdevKeeper): instance
         """
         self.netdev = netdev
+        self.device_num = device_num
 
         # these attributes are netbox model instances as discovered/created
         # through the course of processing.
@@ -433,26 +464,33 @@ class NetboxKeeper:
         # Now see if the device type (slug) already exists,
         #  if so check to make sure that it is not assigned as a different manufacturer
         # if it doesn't exist, create it if the flag 'create_device_type_if_missing' is defined
+        if self.device_num is None:
+            device_model = self.netdev.model
+        else:
+            device_model = self.netdev.devices_dict[self.device_num].get("model")
+            if device_model is None:
+                device_model = self.netdev.model
 
-        slug = self.netdev.model
-        if re.search(r"[^a-zA-Z0-9\-_]+", slug):
-            logging.warning("device model is not sluggable: %s", slug)
-            self.netdev.model = slug.replace(" ", "-")
-            logging.warning("device model is now: %s", self.netdev.model)
+        # Look for any characters that are not letters, numbers, `-`, or `_`
+        if re.search(r"[^a-zA-Z0-9\-_]+", device_model):
+            logging.warning("device model is not sluggable: %s", device_model)
+            device_model = slug.replace(" ", "-")
+            logging.warning("device model is now: %s", device_model)
 
         try:
-            self.device_type = DeviceType.objects.get(slug=slugify(self.netdev.model))
+            # Get the NetBox Device Type Object
+            self.device_type = DeviceType.objects.get(slug=slugify(device_model))
             self.netdev.ot.device_type = self.device_type.slug
             self.netdev.ot.save()
         except DeviceType.DoesNotExist:
             if not create_device_type:
                 raise OnboardException(
-                    reason="fail-config", message=f"ERROR device type not found: {self.netdev.model}"
+                    reason="fail-config", message=f"ERROR device type not found: {device_model}"
                 )
 
-            logging.info("CREATE: device-type: %s", self.netdev.model)
+            logging.info("CREATE: device-type: %s", device_model)
             self.device_type = DeviceType.objects.create(
-                slug=slugify(self.netdev.model), model=self.netdev.model.upper(), manufacturer=self.manufacturer
+                slug=slugify(device_model), model=device_model.upper(), manufacturer=self.manufacturer
             )
             self.device_type.save()
             self.netdev.ot.device_type = self.device_type.slug
@@ -462,7 +500,7 @@ class NetboxKeeper:
         if self.device_type.manufacturer.id != self.manufacturer.id:
             raise OnboardException(
                 reason="fail-config",
-                message=f"ERROR device type {self.netdev.model} already exists for vendor {self.netdev.vendor}",
+                message=f"ERROR device type {device_model} already exists for vendor {self.netdev.vendor}",
             )
 
     def ensure_device_role(
@@ -505,14 +543,23 @@ class NetboxKeeper:
         self.netdev.ot.save()
         return
 
-    def ensure_device_instance(self, default_status=PLUGIN_SETTINGS["default_device_status"]):
+    def ensure_device_instance(
+        self, 
+        default_status=PLUGIN_SETTINGS["default_device_status"],
+        stack_separator=PLUGIN_SETTINGS["stack_separator"]
+    ):
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE.
 
         Args:
           default_status (str) : status assigned to a new device by default.
+          stack_separator (str): Default character to use to indicate the device is a member of a stack
         """
+        if (self.device_num is None) or (int(self.device_num) == 1):
+            device_name = self.netdev.hostname
+        else:
+            device_name = f"{self.netdev.hostname}{}{self.device_num}"
         try:
-            device = Device.objects.get(name=self.netdev.hostname, site=self.netdev.ot.site)
+            device = Device.objects.get(name=device_name, site=self.netdev.ot.site)
         except Device.DoesNotExist:
             device = Device.objects.create(
                 name=self.netdev.hostname,

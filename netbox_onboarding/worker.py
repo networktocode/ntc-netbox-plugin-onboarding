@@ -15,6 +15,7 @@ import logging
 import time
 
 from django_rq import job
+from django.db import transaction
 
 from .models import OnboardingTask
 from .onboard import NetboxKeeper, NetdevKeeper, OnboardException
@@ -44,10 +45,18 @@ def onboard_device(task_id, credentials):
         ot.save()
 
         netdev = NetdevKeeper(ot, username, password)
-        nbk = NetboxKeeper(netdev=netdev)
-
         netdev.get_required_info()
-        nbk.ensure_device()
+
+        if netdev.device_count() > 1:
+            # Length of the keys is greater than 1 then there needs to be logic to handle possible stack switches
+            with transaction.atomic():
+                for device_num, in netdev.get_devices().keys():
+                    nbk = NetboxKeeper(netdev=netdev, device_num=device_num)
+                    nbk.ensure_device()
+
+        else:
+            nbk = NetboxKeeper(netdev=netdev)
+            nbk.ensure_device()
 
     except OnboardException as exc:
         ot.status = OnboardingStatusChoices.STATUS_FAILED

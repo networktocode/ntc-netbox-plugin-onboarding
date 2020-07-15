@@ -40,6 +40,7 @@ class OnboardingConfig(PluginConfig):
         "default_device_status": "active",
         "create_management_interface_if_missing": True,
         "platform_map": {},
+        "stack_separator": ":",
     }
     caching_config = {}
 
