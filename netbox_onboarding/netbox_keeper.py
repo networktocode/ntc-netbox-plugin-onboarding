@@ -234,3 +234,76 @@ class NetboxKeeper:
         if PLUGIN_SETTINGS["create_management_interface_if_missing"]:
             self.ensure_interface()
             self.ensure_primary_ip()
+
+    @staticmethod
+    def ensure_platform(
+        platform_slug, create_platform_if_missing=PLUGIN_SETTINGS["create_platform_if_missing"]
+    ):
+        """Get platform object from NetBox filtered by platform_slug.
+
+        Args:
+            platform_slug (string): slug of a platform object present in NetBox, object will be created if not present
+            and create_platform_if_missing is enabled
+
+        Return:
+            dcim.models.Platform object
+
+        Raises:
+            OnboardException
+
+        Lookup is performed based on the object's slug field (not the name field)
+        """
+        # platform_slug = self.get_platform_slug()
+        # platform_object = self.get_platform_object_from_netbox(platform_slug=platform_slug)
+        # if self.ot.platform != platform_object:
+        #     self.ot.platform = platform_object
+        #     self.ot.save()
+
+        try:
+            # Get the platform from the NetBox DB
+            platform = Platform.objects.get(slug=platform_slug)
+            logging.info("PLATFORM: found in NetBox %s", platform_slug)
+        except Platform.DoesNotExist:
+
+            if not create_platform_if_missing:
+                raise OnboardException(
+                    reason="fail-general", message=f"ERROR platform not found in NetBox: {platform_slug}"
+                )
+
+            if platform_slug not in NETMIKO_TO_NAPALM.keys():
+                raise OnboardException(
+                    reason="fail-general",
+                    message=f"ERROR platform not found in NetBox and it's eligible for auto-creation: {platform_slug}",
+                )
+
+            platform = Platform.objects.create(
+                name=platform_slug, slug=platform_slug, napalm_driver=NETMIKO_TO_NAPALM[platform_slug]
+            )
+            platform.save()
+
+        else:
+            if not platform.napalm_driver:
+                raise OnboardException(
+                    reason="fail-general", message=f"ERROR platform is missing the NAPALM Driver: {platform_slug}",
+                )
+
+        return platform
+
+    @staticmethod
+    def check_netmiko_conversion(guessed_device_type, platform_map=None):
+        """Method to convert Netmiko device type into the mapped type if defined in the settings file.
+
+        Args:
+            guessed_device_type (string): Netmiko device type guessed platform
+            test_platform_map (dict): Platform Map for use in testing
+
+        Returns:
+            string: Platform name
+        """
+        # If this is defined, process the mapping
+        if platform_map:
+            # Attempt to get a mapped slug. If there is no slug, return the guessed_device_type as the slug
+            return platform_map.get(guessed_device_type, guessed_device_type)
+
+        # There is no mapping configured, return what was brought in
+        return guessed_device_type

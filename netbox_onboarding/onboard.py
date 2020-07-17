@@ -21,6 +21,13 @@ PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 class OnboardingTaskManager(object):
     @staticmethod
+    def get_task_napalm_driver(ot):
+        if self.ot.platform and self.ot.platform_napalm_driver:
+            return self.ot.platform.napalm_driver
+        else:
+            return None
+
+    @staticmethod
     def get_task_info(ot):
         task_info = {
             'netdev_mgmt_ip_address': ot.ip_address,
@@ -42,7 +49,8 @@ class OnboardingManager(object):
         netdev = NetdevKeeper(ot,
                               username=self.username,
                               password=self.password,
-                              secret=self.secret
+                              secret=self.secret,
+                              napalm_driver=OnboardingTaskManager.get_task_napalm_driver(ot),
                               )
 
         netdev.get_required_info()
