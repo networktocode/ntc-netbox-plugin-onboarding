@@ -1,4 +1,4 @@
-"""Unit tests for netbox_onboarding.onboard module and its classes.
+"""Unit tests for netbox_onboarding.netdev_keeper module and its classes.
 
 (c) 2020 Network To Code
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,10 +11,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from django.test import TestCase
 
-from dcim.models import Platform
-from netbox_onboarding.onboard import NetdevKeeper, OnboardException
+from socket import gaierror
+from unittest import mock
+
+from django.test import TestCase
+from dcim.models import Site, DeviceRole, Platform
+
+from netbox_onboarding.exceptions import OnboardException
+from netbox_onboarding.models import OnboardingTask
+from netbox_onboarding.netdev_keeper import NetdevKeeper
 
 
 class NetdevKeeperTestCase(TestCase):
@@ -22,37 +28,55 @@ class NetdevKeeperTestCase(TestCase):
 
     def setUp(self):
         """Create a superuser and token for API calls."""
+        self.site1 = Site.objects.create(name="USWEST", slug="uswest")
+        self.device_role1 = DeviceRole.objects.create(name="Firewall", slug="firewall")
+
         self.platform1 = Platform.objects.create(name="JunOS", slug="junos", napalm_driver="junos")
-        self.platform2 = Platform.objects.create(name="Cisco NX-OS", slug="cisco-nx-os")
+        # self.platform2 = Platform.objects.create(name="Cisco NX-OS", slug="cisco-nx-os")
 
-    def test_get_platform_object_from_netbox(self):
-        """Test of platform object from netbox."""
-        # Test assigning platform
-        platform = NetdevKeeper.get_platform_object_from_netbox("junos", create_platform_if_missing=False)
-        self.assertIsInstance(platform, Platform)
+        self.onboarding_task4 = OnboardingTask.objects.create(
+            ip_address="ntc123.local", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
 
-        # Test creation of missing platform object
-        platform = NetdevKeeper.get_platform_object_from_netbox("arista_eos", create_platform_if_missing=True)
-        self.assertIsInstance(platform, Platform)
-        self.assertEqual(platform.napalm_driver, "eos")
+        self.onboarding_task5 = OnboardingTask.objects.create(
+            ip_address="bad.local", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
 
-        # Test failed unable to find the device and not part of the NETMIKO TO NAPALM keys
+        self.onboarding_task7 = OnboardingTask.objects.create(
+            ip_address="192.0.2.1/32", site=self.site1, role=self.device_role1, platform=self.platform1
+        )
+
+    @mock.patch("netbox_onboarding.netdev_keeper.socket.gethostbyname")
+    def test_check_ip(self, mock_get_hostbyname):
+        """Check DNS to IP address."""
+        # Look up response value
+        mock_get_hostbyname.return_value = "192.0.2.1"
+
+        # Create a Device Keeper object of the device
+        ndk4 = NetdevKeeper(hostname=self.onboarding_task4.ip_address)
+
+        # Check that the IP address is returned
+        self.assertTrue(ndk4.check_ip())
+
+        # Run the check to change the IP address
+        self.assertEqual(ndk4.hostname, "192.0.2.1")
+
+    @mock.patch("netbox_onboarding.netdev_keeper.socket.gethostbyname")
+    def test_failed_check_ip(self, mock_get_hostbyname):
+        """Check DNS to IP address failing."""
+        # Look up a failed response
+        mock_get_hostbyname.side_effect = gaierror(8)
+        ndk5 = NetdevKeeper(hostname=self.onboarding_task5.ip_address)
+        ndk7 = NetdevKeeper(hostname=self.onboarding_task7.ip_address)
+
+        # Check for bad.local raising an exception
         with self.assertRaises(OnboardException) as exc_info:
-            platform = NetdevKeeper.get_platform_object_from_netbox("notthere", create_platform_if_missing=True)
-            self.assertEqual(
-                exc_info.exception.message,
-                "ERROR platform not found in NetBox and it's eligible for auto-creation: notthere",
-            )
-            self.assertEqual(exc_info.exception.reason, "fail-general")
+            ndk5.check_ip()
+            self.assertEqual(exc_info.exception.message, "ERROR failed to complete DNS lookup: bad.local")
+            self.assertEqual(exc_info.exception.reason, "fail-dns")
 
-        # Test searching for an object, does not exist, but create_platform is false
+        # Check for exception with prefix address entered
         with self.assertRaises(OnboardException) as exc_info:
-            platform = NetdevKeeper.get_platform_object_from_netbox("cisco_ios", create_platform_if_missing=False)
-            self.assertEqual(exc_info.exception.message, "ERROR platform not found in NetBox: cisco_ios")
-            self.assertEqual(exc_info.exception.reason, "fail-general")
-
-        # Test NAPALM Driver not defined in NetBox
-        with self.assertRaises(OnboardException) as exc_info:
-            platform = NetdevKeeper.get_platform_object_from_netbox("cisco-nx-os", create_platform_if_missing=False)
-            self.assertEqual(exc_info.exception.message, "ERROR platform is missing the NAPALM Driver: cisco-nx-os")
-            self.assertEqual(exc_info.exception.reason, "fail-general")
+            ndk7.check_ip()
+            self.assertEqual(exc_info.exception.reason, "fail-prefix")
+            self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")

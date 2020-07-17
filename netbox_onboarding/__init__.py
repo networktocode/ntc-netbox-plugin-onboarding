@@ -40,6 +40,7 @@ class OnboardingConfig(PluginConfig):
         "default_device_status": "active",
         "create_management_interface_if_missing": True,
         "platform_map": {},
+        "onboarding_extensions_map": {"ios": "netbox_onboarding.onboarding_extensions.ios",},
     }
     caching_config = {}
 
