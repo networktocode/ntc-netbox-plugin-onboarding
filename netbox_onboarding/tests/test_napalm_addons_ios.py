@@ -56,115 +56,56 @@ with line break"""
         napalm_device.open()
 
         # Test Single Unit IOS Switch
-        ios_single_device = IosExtension(napalm_device)
-        expected = {
+        textfsm_expected = {
             "1": {
-                "active": True,
-                "clei_code_num": "CNMWM00ARB",
-                "hb_rev_num": "0x05",
-                "mac_address": "00:16:47:10:AF:00",
-                "mb_assembly_num": "73-9365-08",
-                "mb_rev_num": "A0",
-                "mb_sn": "FOC09480D0A",
                 "model": "WS-C3750G-48PS",
-                "model_num": "WS-C3750G-48PS-E",
-                "model_rev_num": "C0",
-                "ports": "52",
-                "power_supply_part_nr": "341-0108-02",
-                "power_supply_sn": "DCA09431730",
-                "sw_image": "C3750-IPSERVICESK9-M",
-                "sw_ver": "15.0(2)SE11",
-                "system_sn": "FOC0948Y2RB",
-                "top_assembly_part_num": "800-26344-02",
-                "top_assembly_rev_num": "B0",
-                "version_id": "V02",
+                "serial_number": "FOC0948Y2RB",
+                "mac_address": "00:16:47:10:AF:00",
             }
         }
 
         # Assign mock output to the class for standalone device
+        ios_single_device = IosExtension(napalm_device)
         ios_single_device.show_version = load_test_output(f"{test_output_dir}/01_cisco_ios_show_version.txt")
-        result = ios_single_device.parse_stack_commands()
-        self.assertEqual(result, expected)
+        textfsm_result = ios_single_device.parse_with_textfsm()
+        self.assertEqual(textfsm_result, textfsm_expected)
 
         # Test 4 Unit Stack
-        ios_quad_stack = IosExtension(napalm_device)
-        expected = {
+        textfsm_expected = {
             "1": {
-                "active": True,
                 "mac_address": "f8:7b:20:11:aa:80",
-                "mb_assembly_num": "73-15799-08",
-                "mb_rev_num": "A0",
-                "mb_sn": "FOC11122222",
-                "mode": "INSTALL",
+                "serial_number": "FOC11111111",
                 "model": "WS-C3850-48U",
-                "model_num": "WS-C3850-48U",
-                "model_rev_num": "AB0",
-                "ports": "56",
-                "sw_image": "cat3k_caa-universalk9",
-                "sw_ver": "03.06.05E",
-                "system_sn": "FOC11111111",
-                "uptime": "28 weeks, 1 day, 8 hours, 0 minutes",
             },
             "2": {
-                "active": False,
                 "mac_address": "f8:7b:20:22:bb:80",
-                "mb_assembly_num": "73-15799-08",
-                "mb_rev_num": "A0",
-                "mb_sn": "FOC22222222",
-                "mode": "INSTALL",
+                "serial_number": "FCW22222222",
                 "model": "WS-C3850-48U",
-                "model_num": "WS-C3850-48U",
-                "model_rev_num": "AB0",
-                "ports": "56",
-                "sw_image": "cat3k_caa-universalk9",
-                "sw_ver": "03.06.05E",
-                "system_sn": "FCW22222222",
-                "uptime": "28 weeks, 1 day, 8 hours, 1 minute",
             },
             "3": {
-                "active": False,
                 "mac_address": "f8:b7:e2:33:cc:00",
-                "mb_assembly_num": "73-15799-08",
-                "mb_rev_num": "A0",
-                "mb_sn": "FOC33333333",
-                "mode": "INSTALL",
+                "serial_number": "FCW33333333",
                 "model": "WS-C3850-48U",
-                "model_num": "WS-C3850-48U",
-                "model_rev_num": "AB0",
-                "ports": "56",
-                "sw_image": "cat3k_caa-universalk9",
-                "sw_ver": "03.06.05E",
-                "system_sn": "FCW33333333",
-                "uptime": "28 weeks, 1 day, 8 hours, 0 minutes",
             },
             "4": {
-                "active": False,
                 "mac_address": "f8:b7:e2:44:dd:00",
-                "mb_assembly_num": "73-15799-08",
-                "mb_rev_num": "A0",
-                "mb_sn": "FOC44444444",
-                "mode": "INSTALL",
+                "serial_number": "FCW44444444",
                 "model": "WS-C3850-48U",
-                "model_num": "WS-C3850-48U",
-                "model_rev_num": "AB0",
-                "ports": "56",
-                "sw_image": "cat3k_caa-universalk9",
-                "sw_ver": "03.06.05E",
-                "system_sn": "FCW44444444",
-                "uptime": "28 weeks, 1 day, 8 hours, 0 minutes",
             },
         }
 
         # Assign mock output to the class for standalone device
+        ios_quad_stack = IosExtension(napalm_device)
         ios_quad_stack.show_version = load_test_output(f"{test_output_dir}/02_cisco_ios_show_version.txt")
-        result = ios_quad_stack.parse_stack_commands()
-        self.assertEqual(result, expected)
+        textfsm_result = ios_quad_stack.parse_with_textfsm()
+        self.assertEqual(textfsm_result, textfsm_expected)
 
         # Test IOS Router, expecting the length to be an empty dictionary
-        ios_router = IosExtension(napalm_device)
-        expected_router = {}
+        textfsm_expected_router = {}
+
 
         # Assign the output
+        ios_router = IosExtension(napalm_device)
         ios_router.show_version = load_test_output(f"{test_output_dir}/03_cisco_ios_show_version.txt")
-        result = ios_router.parse_stack_commands()
-        self.assertEqual(result, expected_router)
+        textfsm_result = ios_router.parse_with_textfsm()
+        self.assertEqual(textfsm_result, textfsm_expected_router)

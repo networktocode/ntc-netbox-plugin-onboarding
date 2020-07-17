@@ -212,7 +212,7 @@ def unittest(context, netbox_ver=NETBOX_VER, python_ver=PYTHON_VER):
     """
     docker = f"docker-compose -f {COMPOSE_FILE} -p {BUILD_NAME} run netbox"
     context.run(
-        f'{docker} sh -c "python manage.py test netbox_onboarding"',
+        f'{docker} sh -c "python manage.py test netbox_onboarding --keepdb"',
         env={"NETBOX_VER": netbox_ver, "PYTHON_VER": python_ver},
         pty=True,
     )

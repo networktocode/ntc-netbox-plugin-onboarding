@@ -18,7 +18,7 @@ from django_rq import job
 from django.db import transaction
 
 from .models import OnboardingTask
-from .onboard import NetboxKeeper, NetdevKeeper, OnboardException
+from .onboard import NetboxKeeper, NetdevKeeper, OnboardException, PLUGIN_SETTINGS
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 
 logger = logging.getLogger("rq.worker")
@@ -50,7 +50,7 @@ def onboard_device(task_id, credentials):
         if netdev.device_count() > 1:
             # Length of the keys is greater than 1 then there needs to be logic to handle possible stack switches
             with transaction.atomic():
-                for device_num, in netdev.get_devices().keys():
+                for (device_num,) in netdev.get_devices().keys():
                     nbk = NetboxKeeper(netdev=netdev, device_num=device_num)
                     nbk.ensure_device()
 

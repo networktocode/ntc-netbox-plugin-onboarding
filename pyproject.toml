@@ -23,6 +23,7 @@ invoke = "^1.4.1"
 napalm = "^2.5.0"
 pyats = "^20.6"
 genie = "^20.6.1"
+ntc_templates = "^1.5.0"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"

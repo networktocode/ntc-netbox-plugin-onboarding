@@ -109,7 +109,6 @@ class NetdevKeeper:
     def get_devices(self):
         return self.devices_dict
 
-
     def check_reachability(self):
         """Ensure that the device at the mgmt-ipaddr provided is reachable.
 
@@ -484,9 +483,7 @@ class NetboxKeeper:
             self.netdev.ot.save()
         except DeviceType.DoesNotExist:
             if not create_device_type:
-                raise OnboardException(
-                    reason="fail-config", message=f"ERROR device type not found: {device_model}"
-                )
+                raise OnboardException(reason="fail-config", message=f"ERROR device type not found: {device_model}")
 
             logging.info("CREATE: device-type: %s", device_model)
             self.device_type = DeviceType.objects.create(
@@ -544,9 +541,9 @@ class NetboxKeeper:
         return
 
     def ensure_device_instance(
-        self, 
+        self,
         default_status=PLUGIN_SETTINGS["default_device_status"],
-        stack_separator=PLUGIN_SETTINGS["stack_separator"]
+        stack_separator=PLUGIN_SETTINGS["stack_separator"],
     ):
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE.
 
@@ -556,21 +553,25 @@ class NetboxKeeper:
         """
         if (self.device_num is None) or (int(self.device_num) == 1):
             device_name = self.netdev.hostname
+            serial_number = self.netdev.serial_number
+            device_platform = self.netdev.ot.platform
         else:
-            device_name = f"{self.netdev.hostname}{}{self.device_num}"
+            device_name = f"{self.netdev.hostname}{stack_separator}{self.device_num}"
+            serial_number = self.netdev.devices_dict[self.device_num].get("serial_number")
+            device_platform = self.netdev.devices_dict[self.device_num].get("platform")
         try:
             device = Device.objects.get(name=device_name, site=self.netdev.ot.site)
         except Device.DoesNotExist:
             device = Device.objects.create(
-                name=self.netdev.hostname,
+                name=device_name,
                 site=self.netdev.ot.site,
                 device_type=self.device_type,
                 device_role=self.netdev.ot.role,
                 status=default_status,
             )
 
-        device.platform = self.netdev.ot.platform
-        device.serial = self.netdev.serial_number
+        device.platform = device_platform
+        device.serial = serial_number
         device.save()
 
         self.netdev.ot.created_device = device
@@ -604,6 +605,8 @@ class NetboxKeeper:
         self.ensure_device_type()
         self.ensure_device_role()
         self.ensure_device_instance()
-        if PLUGIN_SETTINGS["create_management_interface_if_missing"]:
+        if ((int(self.device_num) == 1) or self.device_num is None) and PLUGIN_SETTINGS[
+            "create_management_interface_if_missing"
+        ]:
             self.ensure_interface()
             self.ensure_primary_ip()

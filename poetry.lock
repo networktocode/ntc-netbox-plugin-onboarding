@@ -591,6 +591,20 @@ test = ["pyyaml (5.1)", "pytest (>=4.6.3)"]
 
 [[package]]
 category = "main"
+description = "Package to return structured data from the output of network devices."
+name = "ntc-templates"
+optional = false
+python-versions = "*"
+version = "1.5.0"
+
+[package.dependencies]
+textfsm = ">=1.1.0"
+
+[package.extras]
+dev = ["pyyaml", "black", "pytest", "ruamel.yaml", "yamllint"]
+
+[[package]]
+category = "main"
 description = "A library for managing Cisco devices through NX-API using XML or jsonrpc."
 name = "nxapi-plumbing"
 optional = false
@@ -1350,7 +1364,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "12ba133ac71b3118b0b8dc33c6d042e6012eed6ee3827bb79fa49f8e4633643f"
+content-hash = "fa6a6fd05460a0eb908a3de5b68f5567bec990a427d4e0c58a8c1dd11533dc6f"
 python-versions = "^3.6 || ^3.7 || ^3.8"
 
 [metadata.files]
@@ -1696,6 +1710,10 @@ netaddr = [
 netmiko = [
     {file = "netmiko-2.4.2-py2.py3-none-any.whl", hash = "sha256:bc284272d76defd5af59a748478aae99af462793f0898f4ab43c28c9a2000e42"},
     {file = "netmiko-2.4.2.tar.gz", hash = "sha256:e6b0cb98afb51fd1fb1d04d024d7572a0b5297dfa0bd18405ee36580deea65a1"},
+]
+ntc-templates = [
+    {file = "ntc_templates-1.5.0-py3-none-any.whl", hash = "sha256:e234a89621f161512690b3e9fe90231795f60c26388643d1483443d58909cdb5"},
+    {file = "ntc_templates-1.5.0.tar.gz", hash = "sha256:ec4bb9e23d2e8c724613c699cd9a7413c22d02ff73a47868b970e24904f9d483"},
 ]
 nxapi-plumbing = [
     {file = "nxapi_plumbing-0.5.2.tar.gz", hash = "sha256:6f54f9983f023bd75b60acd907ff47f559541cc2b98f4fa638b8585ca0de0fb5"},
