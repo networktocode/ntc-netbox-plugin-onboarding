@@ -167,15 +167,20 @@ class NetdevKeeper:
 
         except NetMikoAuthenticationException as err:
             logging.error("ERROR %s", err)
-            raise OnboardException(reason="fail-login", message="ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-login",
+                                   message="ERROR {}".format(str(err))
+                                   )
 
         except (NetMikoTimeoutException, SSHException) as err:
             logging.error("ERROR %s", err)
-            raise OnboardException(reason="fail-connect", message="ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-connect",
+                                   message="ERROR {}".format(str(err))
+                                   )
 
         except Exception as err:
             logging.error("ERROR %s", err)
-            raise OnboardException(reason="fail-general", message="ERROR {}".format(str(err)))
+            raise OnboardException(reason="fail-general",
+                                   message="ERROR {}".format(str(err)))
 
         logging.info("INFO device type is %s", guessed_device_type)
 
@@ -193,7 +198,8 @@ class NetdevKeeper:
         if not self.napalm_driver:
             raise OnboardException(
                 reason="fail-general",
-                message=f"Onboarding for Platform {platform_slug} not supported, as it has no specified NAPALM driver",
+                message=f"Onboarding for Platform {platform_slug} not "
+                        f"supported, as it has no specified NAPALM driver",
             )
 
     def get_required_info(
