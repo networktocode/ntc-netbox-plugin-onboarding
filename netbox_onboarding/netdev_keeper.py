@@ -12,6 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import importlib
 import logging
 import socket
 
@@ -26,6 +27,8 @@ from netmiko.ssh_exception import NetMikoTimeoutException
 from paramiko.ssh_exception import SSHException
 
 from .constants import NETMIKO_TO_NAPALM
+
+from ntc-netbox-plugin-onboarding.onboarding.onboarding import StandaloneOnboarding
 
 __all__ = []
 
@@ -84,6 +87,8 @@ class NetdevKeeper:
         self.netdev_mgmt_ifname = None
         self.netdev_mgmt_pflen = None
         self.netmiko_device_type = None
+        self.onboarding_class = StandaloneOnboarding
+        self.driver_addon_result = None
 
     def check_ip(self):
         """Method to check if the IP address form field was an IP address.
@@ -160,29 +165,29 @@ class NetdevKeeper:
         }
 
         try:
-            logging.info("INFO guessing device type: %s", kwargs.get("host"))
+            logging.info(f"INFO guessing device type: {self.hostname}")
             guesser = SSHDetect(**remote_device)
             guessed_device_type = guesser.autodetect()
-            logging.info("INFO guessed device type: %s", guessed_device_type)
+            logging.info(f"INFO guessed device type: {guessed_device_type}")
 
         except NetMikoAuthenticationException as err:
             logging.error("ERROR %s", err)
             raise OnboardException(reason="fail-login",
-                                   message="ERROR {}".format(str(err))
+                                   message=f"ERROR: {str(err)}"
                                    )
 
         except (NetMikoTimeoutException, SSHException) as err:
-            logging.error("ERROR %s", err)
+            logging.error(f"ERROR: {str(err)}")
             raise OnboardException(reason="fail-connect",
-                                   message="ERROR {}".format(str(err))
+                                   message=f"ERROR: {str(err)}"
                                    )
 
         except Exception as err:
-            logging.error("ERROR %s", err)
+            logging.error(f"ERROR: {str(err)}", err)
             raise OnboardException(reason="fail-general",
-                                   message="ERROR {}".format(str(err)))
+                                   message=f"ERROR: {str(err)}")
 
-        logging.info("INFO device type is %s", guessed_device_type)
+        logging.info(f"INFO device type is: {guessed_device_type}")
 
         return guessed_device_type
 
@@ -237,7 +242,7 @@ class NetdevKeeper:
             optional_args = settings.NAPALM_ARGS.copy()
             optional_args["secret"] = self.secret
 
-            dev = driver(
+            napalm_device = driver(
                 hostname=self.hostname,
                 username=self.username,
                 password=self.password,
@@ -245,15 +250,15 @@ class NetdevKeeper:
                 optional_args=optional_args,
             )
 
-            dev.open()
+            napalm_device.open()
 
             logging.info("COLLECT: device facts")
-            facts = dev.get_facts()
+            facts = napalm_device.get_facts()
 
             logging.info("COLLECT: device interface IPs")
-            ip_ifs = dev.get_interfaces_ip()
+            ip_ifs = napalm_device.get_interfaces_ip()
 
-            # retain the attributes that will be later used by NetBox processing.
+            # Retain the attributes that will be later used by NetBox processing.
             self.netdev_hostname = facts["hostname"]
             self.netdev_vendor = facts["vendor"].title()
             self.netdev_model = facts["model"].lower()
@@ -262,6 +267,17 @@ class NetdevKeeper:
                 hostname=self.hostname,
                 ip_ifs=ip_ifs
             )
+
+            try:
+                module_name = f"ntc-netbox-plugin-onboarding.onboarding_extensions.{driver_name}"
+                module = importlib.import_module(module_name)
+                driver_addon_class = module.OnboardingDriverExtensions(
+                    napalm_device=napalm_device
+                )
+                self.onboarding_class = driver_addon_class.get_onboarding_class()
+                self.driver_addon_result = driver_addon_class.get_ext_result()
+            except ImportError as exc:
+                pass
 
         except ConnectionException as exc:
             raise OnboardException(reason="fail-login", message=exc.args[0])
@@ -281,6 +297,8 @@ class NetdevKeeper:
             'netdev_mgmt_ifname': self.netdev_mgmt_ifname,
             'netdev_mgmt_pflen': self.netdev_mgmt_pflen,
             'netdev_netmiko_device_type': self.netmiko_device_type,
+            'onboarding_class': self.onboarding_class,
+            'driver_addon_result': self.driver_addon_result,
         }
 
         return netdev_dict
