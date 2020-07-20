@@ -20,8 +20,6 @@ from django.conf import settings
 from django.utils.text import slugify
 from ipam.models import IPAddress
 
-__all__ = []
-
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
@@ -29,6 +27,13 @@ class NetboxKeeper:
     """Used to manage the information relating to the network device within the NetBox server."""
 
     def __init__(
+            netdev_mgmt_ip_address=None,
+            netdev_nb_site_slug=None,
+            netdev_nb_device_char=None,
+            netdev_nb_role_slug=None,
+            netdev_nb_role_color=None,
+            netdev_nb_platform_slug=None,
+
             netdev_hostname,
             netdev_vendor,
             netdev_model,
@@ -36,29 +41,27 @@ class NetboxKeeper:
             netdev_mgmt_ifname=None,
             netdev_mgmt_pflen=None,
             netdev_mgmt_ip_address=None,
-            netdev_nb_device_type_char=None,
-            netdev_nb_role_slug=None,
-            netdev_nb_site_slug=None,
-            netdev_nb_platform_slug=None,
+            netdev_netmiko_device_type=None
     ):
         """Create an instance and initialize the managed attributes that are used throughout the onboard processing.
 
         Args:
           netdev (NetdevKeeper): instance
         """
+        self.netdev_mgmt_ip_address = netdev_mgmt_ip_address
+        self.netdev_nb_site_slug = netdev_nb_site_slug
+        self.netdev_nb_device_char = netdev_nb_device_type_char
+        self.netdev_nb_role_slug = netdev_nb_role_slug
+        self.netdev_nb_role_color = netdev_nb_role_color
+        self.netdev_nb_platform_slug = netdev_nb_platform_slug
+
         self.netdev_hostname = netdev_hostname
         self.netdev_vendor = netdev_vendor
         self.netdev_model = netdev_model
         self.netdev_serial_number = netdev_serial_number
         self.netdev_mgmt_ifname = netdev_mgmt_ifname
         self.netdev_mgmt_pflen = netdev_mgmt_pflen
-        self.netdev_mgmt_ip_address = netdev_mgmt_ip_address
-
-        self.netdev_nb_device_char = netdev_nb_device_type_char
-        self.netdev_nb_role_slug = netdev_nb_role_slug or PLUGIN_SETTINGS["default_device_role"]
-        self.netdev_nb_role_color = netdev_nb_role_color or PLUGIN_SETTINGS["default_device_role_color"]
-        self.netdev_nb_site_slug = netdev_nb_site_slug
-        self.netdev_nb_platform_slug = netdev_nb_platform_slug
+        self.netdev_netmiko_device_type = netdev_netmiko_device_type
 
         # these attributes are netbox model instances as discovered/created
         # through the course of processing.
@@ -96,8 +99,8 @@ class NetboxKeeper:
                 )
 
     def ensure_device_type(
-        self,
-        create_device_type=PLUGIN_SETTINGS["create_device_type_if_missing"],
+            self,
+            create_device_type=PLUGIN_SETTINGS["create_device_type_if_missing"],
     ):
         """Ensure the Device Type (slug) exists in NetBox associated to the netdev "model" and "vendor" (manufacturer).
 
@@ -125,7 +128,9 @@ class NetboxKeeper:
             logging.warning("device model is now: %s", self.netdev_model)
 
         try:
-            nb_device_type_slug = slugify(self.netdev_model)
+            # Use declared device type or auto-discovered model
+            nb_device_type_text = netdev_nb_device_char or self.netdev_model
+            nb_device_type_slug = slugify(nb_device_type_text)
 
             self.nb_device_type = DeviceType.objects.get(
                 slug=nb_device_type_slug
@@ -141,7 +146,7 @@ class NetboxKeeper:
         except DeviceType.DoesNotExist:
             if create_device_type:
                 logging.info("CREATE: device-type: %s", self.netdev_model)
-                self.device_type = DeviceType.objects.create(
+                self.nb_device_type = DeviceType.objects.create(
                     slug=nb_device_type_slug,
                     model=self.netdev_model.upper(),
                     manufacturer=self.nb_manufacturer,
@@ -153,8 +158,8 @@ class NetboxKeeper:
                 )
 
     def ensure_device_role(
-        self,
-        create_device_role=PLUGIN_SETTINGS["create_device_role_if_missing"],
+            self,
+            create_device_role=PLUGIN_SETTINGS["create_device_role_if_missing"],
     ):
         """Ensure that the device role is defined / exist in NetBox or create it if it doesn't exist.
 
@@ -168,8 +173,6 @@ class NetboxKeeper:
             NetBox.
         """
         try:
-            self.netdev_nb_role_slug = slugify(netdev_nb_role_slug)
-
             self.nb_device_role = DeviceRole.objects.get(
                 slug=self.netdev_nb_role_slug
             )
@@ -187,45 +190,40 @@ class NetboxKeeper:
                     message=f"ERROR device role not found: {self.netdev_nb_role_slug}"
                 )
 
-    #@staticmethod
+    # @staticmethod
     def ensure_device_platform(
-        create_platform_if_missing=PLUGIN_SETTINGS["create_platform_if_missing"]
+            create_platform_if_missing=PLUGIN_SETTINGS["create_platform_if_missing"]
     ):
-        # """Get platform object from NetBox filtered by platform_slug.
-        #
-        # Args:
-        #     platform_slug (string): slug of a platform object present in NetBox, object will be created if not present
-        #     and create_platform_if_missing is enabled
-        #
-        # Return:
-        #     dcim.models.Platform object
-        #
-        # Raises:
-        #     OnboardException
-        #
-        # Lookup is performed based on the object's slug field (not the name field)
-        # """
-        # platform_slug = self.get_platform_slug()
-        # platform_object = self.get_platform_object_from_netbox(platform_slug=platform_slug)
-        # if self.ot.platform != platform_object:
-        #     self.ot.platform = platform_object
-        #     self.ot.save()
+        """Get platform object from NetBox filtered by platform_slug.
+
+        Args:
+            platform_slug (string): slug of a platform object present in NetBox, object will be created if not present
+            and create_platform_if_missing is enabled
+
+        Return:
+            dcim.models.Platform object
+
+        Raises:
+            OnboardException
+
+        Lookup is performed based on the object's slug field (not the name field)
+        """
 
         try:
-            # Get the platform from the NetBox DB
+            self.netdev_nb_platform_slug = self.netdev_nb_platform_slug or self.netdev_netmiko_device_type
+
             self.nb_platform = Platform.objects.get(
                 slug=self.netdev_nb_platform_slug
             )
 
-            logging.info("PLATFORM: found in NetBox %s", platform_slug)
+            logging.info(f"PLATFORM: found in NetBox {self.netdev_nb_platform_slug}")
 
         except Platform.DoesNotExist:
             if create_platform_if_missing:
                 self.nb_platform = Platform.objects.create(
                     name=self.netdev_nb_platform_slug,
                     slug=self.netdev_nb_platform_slug,
-                    # TODO: mzb
-                    napalm_driver=NETMIKO_TO_NAPALM[platform_slug]
+                    napalm_driver=NETMIKO_TO_NAPALM[self.netdev_nb_platform_slug]
                 )
             else:
                 raise OnboardException(
@@ -248,7 +246,6 @@ class NetboxKeeper:
         #         )
 
         # return platform
-
 
     def ensure_device_instance(self, default_status=PLUGIN_SETTINGS["default_device_status"]):
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE.
@@ -310,21 +307,21 @@ class NetboxKeeper:
             self.ensure_interface()
             self.ensure_primary_ip()
 
-    @staticmethod
-    def check_netmiko_conversion(guessed_device_type, platform_map=None):
-        """Method to convert Netmiko device type into the mapped type if defined in the settings file.
-
-        Args:
-            guessed_device_type (string): Netmiko device type guessed platform
-            test_platform_map (dict): Platform Map for use in testing
-
-        Returns:
-            string: Platform name
-        """
-        # If this is defined, process the mapping
-        if platform_map:
-            # Attempt to get a mapped slug. If there is no slug, return the guessed_device_type as the slug
-            return platform_map.get(guessed_device_type, guessed_device_type)
-
-        # There is no mapping configured, return what was brought in
-        return guessed_device_type
+    # @staticmethod
+    # def check_netmiko_conversion(guessed_device_type, platform_map=None):
+    #     """Method to convert Netmiko device type into the mapped type if defined in the settings file.
+    #
+    #     Args:
+    #         guessed_device_type (string): Netmiko device type guessed platform
+    #         test_platform_map (dict): Platform Map for use in testing
+    #
+    #     Returns:
+    #         string: Platform name
+    #     """
+    #     # If this is defined, process the mapping
+    #     if platform_map:
+    #         # Attempt to get a mapped slug. If there is no slug, return the guessed_device_type as the slug
+    #         return platform_map.get(guessed_device_type, guessed_device_type)
+    #
+    #     # There is no mapping configured, return what was brought in
+    #     return guessed_device_type

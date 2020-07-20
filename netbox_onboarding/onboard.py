@@ -16,7 +16,6 @@ from django.conf import settings
 
 from .netdev_keeper import NetdevKeeper
 
-__all__ = []
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
@@ -44,18 +43,6 @@ class OnboardingTaskManager(object):
     def timeout(self):
         return self.ot.timeout
 
-    @property
-    def nb_task_info(self):
-        task_info = {
-            'netdev_mgmt_ip_address': ot.ip_address,
-            'netdev_nb_device_type_slug': ot.device_type,
-            'netdev_nb_role_slug': ot.role.slug if ot.role else None,
-            'netdev_nb_site_slug': ot.site.slug if ot.site else None,
-            'netdev_nb_platform_slug': ot.platform.slug if ot.platform else None,
-        }
-
-        return task_info
-
 
 class OnboardingManager(object):
     def __init__(self, ot, username, password, secret):
@@ -75,16 +62,31 @@ class OnboardingManager(object):
                               napalm_driver=otm.napalm_driver,
                               )
 
-        netdev.get_required_info()
-
-        netdev_info = netdev.get_netdev_dict()
+        netdev.get_onboarding_facts()
+        netdev_dict = netdev.get_netdev_dict()
 
         nb_keeper_kwargs = {
-            **netdev_info,
-            **otm.nb_task_info
+            # Kwargs extracted from OnboardingTask:
+            'netdev_mgmt_ip_address': otm.ip_address,
+            'netdev_nb_site_slug': otm.site.slug if otm.site else None,
+            'netdev_nb_device_char': otm.device_type,
+            'netdev_nb_role_slug': otm.role.slug if otm.role else PLUGIN_SETTINGS["default_device_role"],
+            'netdev_nb_role_color': PLUGIN_SETTINGS["default_device_role_color"],
+            'netdev_nb_platform_slug': otm.platform.slug if otm.platform else None,
+
+            # Kwargs discovered on the Onboarded Device:
+            'netdev_hostname': netdev_dict['netdev_hostname'],
+            'netdev_vendor': netdev_dict['netdev_vendor'],
+            'netdev_model': netdev_dict['netdev_model'],
+            'netdev_serial_number': netdev_dict['netdev_serial_number'],
+            'netdev_mgmt_ifname': netdev_dict['netdev_mgmt_ifname'],
+            'netdev_mgmt_pflen': netdev_dict['netdev_mgmt_pflen'],
+            'netdev_netmiko_device_type': netdev_dict['netdev_netmiko_device_type'],
+            'onboarding_class': netdev_dict['onboarding_class'],
+            'driver_addon_result': netdev_dict['driver_addon_result'],
         }
 
-        onboarding_cls = netdev_info['onboarding_class']()
+        onboarding_cls = netdev_dict['onboarding_class']()
         onboarding_cls.run(nb_keeper_kwargs=nb_keeper_kwargs)
 
-        self.created_device = onboarding.created_device
+        self.created_device = onboarding_cls.created_device

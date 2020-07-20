@@ -24,11 +24,10 @@ from netaddr.core import AddrFormatError
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
 from netmiko.ssh_exception import NetMikoTimeoutException
+from ntc_netbox_plugin_onboarding.onboarding.onboarding import StandaloneOnboarding
 from paramiko.ssh_exception import SSHException
 
 from .constants import NETMIKO_TO_NAPALM
-
-from ntc-netbox-plugin-onboarding.onboarding.onboarding import StandaloneOnboarding
 
 __all__ = []
 
@@ -67,11 +66,7 @@ class NetdevKeeper:
           OnboardException('fail-config'):
             When any required config options are missing.
         """
-        # self.ot = onboarding_task
-
-        # Attributes that are set when reading info from device
-
-        # Inputs
+        # Attributes
         self.hostname = hostname
         self.port = port
         self.timeout = timeout
@@ -80,12 +75,8 @@ class NetdevKeeper:
         self.secret = secret or settings.NAPALM_ARGS.get("secret", None)
         self.napalm_driver = napalm_driver
 
-        # Outputs
-        self.netdev_vendor = None
-        self.netdev_model = None
-        self.netdev_serial_number = None
-        self.netdev_mgmt_ifname = None
-        self.netdev_mgmt_pflen = None
+        self.facts = None
+        self.ip_ifs = None
         self.netmiko_device_type = None
         self.onboarding_class = StandaloneOnboarding
         self.driver_addon_result = None
@@ -115,7 +106,8 @@ class NetdevKeeper:
         # Catch when someone has put in a prefix address, raise an exception
         except ValueError:
             raise OnboardException(
-                reason="fail-general", message=f"ERROR appears a prefix was entered: {self.hostname}"
+                reason="fail-general",
+                message=f"ERROR appears a prefix was entered: {self.hostname}"
             )
         # An AddrFormatError exception means that there is not an IP address in the field, and should continue on
         except AddrFormatError:
@@ -127,7 +119,8 @@ class NetdevKeeper:
             except socket.gaierror:
                 # DNS Lookup has failed, Raise an exception for unable to complete DNS lookup
                 raise OnboardException(
-                    reason="fail-dns", message=f"ERROR failed to complete DNS lookup: {self.hostname}"
+                    reason="fail-dns",
+                    message=f"ERROR failed to complete DNS lookup: {self.hostname}"
                 )
 
     def check_reachability(self):
@@ -207,7 +200,7 @@ class NetdevKeeper:
                         f"supported, as it has no specified NAPALM driver",
             )
 
-    def get_required_info(
+    def get_onboarding_facts(
             self,
             default_mgmt_if=PLUGIN_SETTINGS["default_management_interface"],
             default_mgmt_pfxlen=PLUGIN_SETTINGS["default_management_prefix_length"],
@@ -253,23 +246,14 @@ class NetdevKeeper:
             napalm_device.open()
 
             logging.info("COLLECT: device facts")
-            facts = napalm_device.get_facts()
+            self.facts = napalm_device.get_facts()
 
             logging.info("COLLECT: device interface IPs")
-            ip_ifs = napalm_device.get_interfaces_ip()
+            self.ip_ifs = napalm_device.get_interfaces_ip()
 
-            # Retain the attributes that will be later used by NetBox processing.
-            self.netdev_hostname = facts["hostname"]
-            self.netdev_vendor = facts["vendor"].title()
-            self.netdev_model = facts["model"].lower()
-            self.netdev_serial_number = facts["serial_number"]
-            self.netdev_mgmt_ifname, self.netdev_mgmt_pflen = get_mgmt_info(
-                hostname=self.hostname,
-                ip_ifs=ip_ifs
-            )
-
+            # Attempt to find onboarding extensions dynamically
             try:
-                module_name = f"ntc-netbox-plugin-onboarding.onboarding_extensions.{driver_name}"
+                module_name = f"ntc_netbox_plugin_onboarding.onboarding_extensions.{driver_name}"
                 module = importlib.import_module(module_name)
                 driver_addon_class = module.OnboardingDriverExtensions(
                     napalm_device=napalm_device
@@ -277,7 +261,7 @@ class NetdevKeeper:
                 self.onboarding_class = driver_addon_class.get_onboarding_class()
                 self.driver_addon_result = driver_addon_class.get_ext_result()
             except ImportError as exc:
-                pass
+                logging.info(f"No onboarding extension for driver {driver_name} found")
 
         except ConnectionException as exc:
             raise OnboardException(reason="fail-login", message=exc.args[0])
@@ -290,12 +274,12 @@ class NetdevKeeper:
 
     def get_netdev_dict(self):
         netdev_dict = {
-            'netdev_hostname': self.netdev_hostname,
-            'netdev_vendor': self.netdev_vendor,
-            'netdev_model': self.netdev_model,
-            'netdev_serial_number': self.netdev_serial_number,
-            'netdev_mgmt_ifname': self.netdev_mgmt_ifname,
-            'netdev_mgmt_pflen': self.netdev_mgmt_pflen,
+            'netdev_hostname': self.facts["hostname"],
+            'netdev_vendor': self.facts["vendor"].title(),
+            'netdev_model': self.facts["model"].lower(),
+            'netdev_serial_number': self.facts["serial_number"],
+            'netdev_mgmt_ifname': get_mgmt_info(hostname=self.hostname, ip_ifs=self.ip_ifs)[0],
+            'netdev_mgmt_pflen': get_mgmt_info(hostname=self.hostname, ip_ifs=self.ip_ifs)[1],
             'netdev_netmiko_device_type': self.netmiko_device_type,
             'onboarding_class': self.onboarding_class,
             'driver_addon_result': self.driver_addon_result,

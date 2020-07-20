@@ -1,4 +1,5 @@
-from ntc-netbox-plugin-onboarding.onboarding.onboarding import StandaloneOnboarding
+from ntc_netbox_plugin_onboarding.onboarding.onboarding import StandaloneOnboarding
+
 
 class OnboardingDriverExtensions(object):
     def __init__(self, napalm_device):
