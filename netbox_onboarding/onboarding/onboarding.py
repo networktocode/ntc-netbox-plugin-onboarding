@@ -1,5 +1,4 @@
-
-from .netdev_keeper import NetdevKeeper
+from ntc_netbox_plugin_onboarding.netbox_keeper import NetboxKeeper
 
 
 class Onboarding(object):
@@ -8,11 +7,10 @@ class Onboarding(object):
 
 
 class StandaloneOnboarding(Onboarding):
-    def run(self, nb_keeper_kwargs):
-        nb = NetboxKeeper(**kwargs)
+    def run(self, onboarding_kwargs):
+        nb = NetboxKeeper(**onboarding_kwargs)
         nb.ensure_device()
         self.created_device = nb.device
-
 
 # class StackOnboarding(Onboarding):
 #     def run(self):

@@ -9,8 +9,18 @@ class OnboardingDriverExtensions(object):
         """
         Return onboarding class for IOS driver
         Currently supported is Standalone Onboarding Process
+
+        Result of this method is used by the OnboardingManager to
+        initiate the instance of the onboarding class.
         """
         return StandaloneOnboarding
 
     def get_ext_result(self):
+        """
+        This method is used to store any object as a return value.
+        Result of this method is passed to the onboarding class as
+        driver_addon_result argument.
+
+        :return: Any()
+        """
         return None

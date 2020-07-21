@@ -2,7 +2,6 @@
 
 from dcim.models import Platform
 
-
 NETMIKO_TO_NAPALM_STATIC = {
     "cisco_ios": "ios",
     "cisco_nxos": "nxos_ssh",
@@ -11,7 +10,8 @@ NETMIKO_TO_NAPALM_STATIC = {
     "cisco_xr": "iosxr",
 }
 
-PLATFORM_TO_NAPALM_NETBOX = { platform.slug: platform.napalm_driver for platform in Platform.objects.all() if platform.napalm_driver }
+PLATFORM_TO_NAPALM_NETBOX = {platform.slug: platform.napalm_driver for platform in Platform.objects.all() if
+                             platform.napalm_driver}
 
 # Update Constants if Napalm driver is defined for NetBox Platform
 NETMIKO_TO_NAPALM = {

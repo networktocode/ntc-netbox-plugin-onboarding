@@ -28,8 +28,7 @@ from ntc_netbox_plugin_onboarding.onboarding.onboarding import StandaloneOnboard
 from paramiko.ssh_exception import SSHException
 
 from .constants import NETMIKO_TO_NAPALM
-
-__all__ = []
+from .exceptions import OnboardException
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
@@ -39,14 +38,18 @@ PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 # when creating the IPAM IP-Address instance.
 # Note that in some cases (e.g., NAT) the hostname may differ than
 # the interface addresses present on the device. We need to handle this.
-def get_mgmt_info(hostname, ip_ifs):
+def get_mgmt_info(hostname,
+                  ip_ifs,
+                  default_mgmt_if=PLUGIN_SETTINGS["default_management_interface"],
+                  default_mgmt_pfxlen=PLUGIN_SETTINGS["default_management_prefix_length"],
+                  ):
     """Get the interface name and prefix length for the management interface."""
     for if_name, if_data in ip_ifs.items():
         for if_addr, if_addr_data in if_data["ipv4"].items():
             if if_addr == hostname:
-                return (if_name, if_addr_data["prefix_length"])
+                return if_name, if_addr_data["prefix_length"]
 
-    return (default_mgmt_if, default_mgmt_pfxlen)
+    return default_mgmt_if, default_mgmt_pfxlen
 
 
 class NetdevKeeper:
@@ -151,7 +154,7 @@ class NetdevKeeper:
 
         remote_device = {
             "device_type": "autodetect",
-            "host": self.hostname
+            "host": self.hostname,
             "username": self.username,
             "password": self.password,
             "secret": self.secret,

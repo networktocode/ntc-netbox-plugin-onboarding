@@ -16,7 +16,6 @@ from django.conf import settings
 
 from .netdev_keeper import NetdevKeeper
 
-
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
@@ -32,8 +31,8 @@ class OnboardingTaskManager(object):
             return None
 
     @property
-    def hostname(self):
-        return self.ot.hostname
+    def ip_address(self):
+        return self.ot.ip_address
 
     @property
     def port(self):
@@ -42,6 +41,22 @@ class OnboardingTaskManager(object):
     @property
     def timeout(self):
         return self.ot.timeout
+
+    @property
+    def site(self):
+        return self.ot.site
+
+    @property
+    def device_type(self):
+        return self.ot.device_type
+
+    @property
+    def role(self):
+        return self.ot.role
+
+    @property
+    def platform(self):
+        return self.ot.platform
 
 
 class OnboardingManager(object):
@@ -53,7 +68,7 @@ class OnboardingManager(object):
         # Create instance of Onboarding Task Manager class:
         otm = OnboardingTaskManager(ot)
 
-        netdev = NetdevKeeper(hostname=otm.hostname,
+        netdev = NetdevKeeper(hostname=otm.ip_address,
                               port=otm.port,
                               timeout=otm.timeout,
                               username=self.username,
@@ -65,7 +80,7 @@ class OnboardingManager(object):
         netdev.get_onboarding_facts()
         netdev_dict = netdev.get_netdev_dict()
 
-        nb_keeper_kwargs = {
+        onboarding_kwargs = {
             # Kwargs extracted from OnboardingTask:
             'netdev_mgmt_ip_address': otm.ip_address,
             'netdev_nb_site_slug': otm.site.slug if otm.site else None,
@@ -87,6 +102,6 @@ class OnboardingManager(object):
         }
 
         onboarding_cls = netdev_dict['onboarding_class']()
-        onboarding_cls.run(nb_keeper_kwargs=nb_keeper_kwargs)
+        onboarding_cls.run(onboarding_kwargs=onboarding_kwargs)
 
         self.created_device = onboarding_cls.created_device
