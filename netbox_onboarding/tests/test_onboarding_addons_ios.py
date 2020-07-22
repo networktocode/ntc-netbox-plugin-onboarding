@@ -25,7 +25,7 @@ from dcim.models import Platform
 from netbox_onboarding.onboard import NetdevKeeper, OnboardException
 
 # Onboard class as the name of the platformExtension to allow for the onboarding of several platforms
-from netbox_onboarding.napalm_addons.ios import NapalmDeviceExtensions as IosExtension
+from netbox_onboarding.onboarding_addons.ios import OnboardingDriverExtensions as IosExtension
 
 # Load utilities
 from .utilities import load_test_output

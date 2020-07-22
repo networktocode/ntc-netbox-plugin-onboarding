@@ -1,9 +1,4 @@
 """Class built for the IOS device Extensions."""
-# Load Genie Libraries
-from genie.conf.base import Device
-from genie.libs.parser.utils import get_parser
-from pyats.datastructures import AttrDict
-
 # Load TextFSM Parsing Library
 from ntc_templates.parse import parse_output
 
