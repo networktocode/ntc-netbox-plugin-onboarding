@@ -12,7 +12,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .exceptions import OnboardException
 import logging
 import re
 
@@ -26,6 +25,9 @@ from ipam.models import IPAddress
 from .constants import NETMIKO_TO_NAPALM
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
+
+
+from .exceptions import OnboardException
 
 
 class NetboxKeeper:

@@ -12,13 +12,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-import time
 
 from django_rq import job
 from django.db import transaction
 
+from .choices import OnboardingFailChoices
+from .choices import OnboardingStatusChoices
+from .exceptions import OnboardException
 from .models import OnboardingTask
-from .onboard import NetboxKeeper, NetdevKeeper, OnboardException, PLUGIN_SETTINGS
+from .onboard import NetboxKeeper, NetdevKeeper, OnboardException, PLUGIN_SETTINGS, OnboardingManager
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 
 logger = logging.getLogger("rq.worker")
@@ -30,51 +32,57 @@ def onboard_device(task_id, credentials):
     """Process a single OnboardingTask instance."""
     username = credentials.username
     password = credentials.password
+    secret = credentials.secret
 
+    ot = OnboardingTask.objects.get(id=task_id)
+
+    logger.info("START: onboard device")
+    onboarded_device = None
     try:
-        ot = OnboardingTask.objects.get(id=task_id)
-    except OnboardingTask.DoesNotExist:
-        # TODO: maybe we started before the DB was done writing it, or maybe it was deleted out from under us?
-        time.sleep(1)
-        ot = OnboardingTask.objects.get(id=task_id)
-
-    logging.info("START: onboard device")
+        if ot.ip_address:
+            onboarded_device = Device.objects.get(
+                primary_ip4__address__net_host=ot.ip_address
+            )
+    except:
+        pass
 
     try:
         ot.status = OnboardingStatusChoices.STATUS_RUNNING
         ot.save()
 
-        netdev = NetdevKeeper(ot, username, password)
-        netdev.get_required_info()
+        onboarding_manager = OnboardingManager(ot=ot,
+                                               username=username,
+                                               password=password,
+                                               secret=secret)
 
-        if netdev.device_count() > 1:
-            # Length of the keys is greater than 1 then there needs to be logic to handle possible stack switches
-            with transaction.atomic():
-                for (device_num,) in netdev.get_devices().keys():
-                    nbk = NetboxKeeper(netdev=netdev, device_num=device_num)
-                    nbk.ensure_device()
+        if onboarding_manager.created_device:
+            ot.created_device = onboarding_manager.created_device
 
-        else:
-            nbk = NetboxKeeper(netdev=netdev)
-            nbk.ensure_device()
+        ot.status = OnboardingStatusChoices.STATUS_SUCCEEDED
+        ot.save()
+        logger.info("FINISH: onboard device")
+        onboarding_status = True
 
     except OnboardException as exc:
+        if onboarded_device:
+            ot.created_device = onboarded_device
+
+        logger.error("Onboarding Error - OnboardException")
         ot.status = OnboardingStatusChoices.STATUS_FAILED
         ot.failed_reason = exc.reason
         ot.message = exc.message
         ot.save()
-        # return dict(ok=False)
-        raise
+        onboarding_status = False
 
     except Exception as exc:
+        if onboarded_device:
+            ot.created_device = onboarded_device
+
+        logger.error("Onboarding Error - Exception")
         ot.status = OnboardingStatusChoices.STATUS_FAILED
         ot.failed_reason = OnboardingFailChoices.FAIL_GENERAL
         ot.message = str(exc)
         ot.save()
-        raise
+        onboarding_status = False
 
-    logging.info("FINISH: onboard device")
-    ot.status = OnboardingStatusChoices.STATUS_SUCCEEDED
-    ot.save()
-
-    return dict(ok=True)
+    return dict(ok=onboarding_status)

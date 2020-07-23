@@ -23,19 +23,8 @@ import netaddr
 from netaddr.core import AddrFormatError
 
 from django.conf import settings
-from django.utils.text import slugify
 
-from netmiko.ssh_autodetect import SSHDetect
-from netmiko.ssh_exception import NetMikoAuthenticationException
-from netmiko.ssh_exception import NetMikoTimeoutException
-from paramiko.ssh_exception import SSHException
-
-from dcim.models import Manufacturer, Device, Interface, DeviceType, Platform, DeviceRole
-from ipam.models import IPAddress
-
-from .constants import NETMIKO_TO_NAPALM
-
-__all__ = []
+from .netdev_keeper import NetdevKeeper
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
@@ -240,6 +229,10 @@ class NetdevKeeper:
             )
             platform.save()
 
+    @property
+    def napalm_driver(self):
+        if self.ot.platform and self.ot.platform_napalm_driver:
+            return self.ot.platform.napalm_driver
         else:
             if not platform.napalm_driver:
                 raise OnboardException(
@@ -260,10 +253,10 @@ class NetdevKeeper:
                     False if unable to find a device IP (error)
 
         Raises:
-          OnboardException("fail-general"):
-            When a prefix was entered for an IP address
-          OnboardException("fail-dns"):
-            When a Name lookup via DNS fails to resolve an IP address
+            OnboardException("fail-general"):
+                When a prefix was entered for an IP address
+            OnboardException("fail-dns"):
+                When a Name lookup via DNS fails to resolve an IP address
         """
         try:
             # Assign checked_ip to None for error handling
@@ -296,14 +289,14 @@ class NetdevKeeper:
         """Gather information from the network device that is needed to onboard the device into the NetBox system.
 
         Raises:
-          OnboardException('fail-login'):
-            When unable to login to device
+            OnboardException('fail-login'):
+                When unable to login to device
 
-          OnboardException('fail-execute'):
-            When unable to run commands to collect device information
+            OnboardException('fail-execute'):
+                When unable to run commands to collect device information
 
-          OnboardException('fail-general'):
-            Any other unexpected device comms failure.
+            OnboardException('fail-general'):
+                Any other unexpected device comms failure.
         """
         # Check to see if the IP address entered was an IP address or a DNS entry, get the IP address
         self.check_ip()
@@ -433,17 +426,17 @@ class NetboxKeeper:
         """Ensure the Device Type (slug) exists in NetBox associated to the netdev "model" and "vendor" (manufacturer).
 
         Args:
-          create_manufacturer (bool) :Flag to indicate if we need to create the manufacturer, if not already present
-          create_device_type (bool): Flag to indicate if we need to create the device_type, if not already present
+            create_manufacturer (bool) :Flag to indicate if we need to create the manufacturer, if not already present
+            create_device_type (bool): Flag to indicate if we need to create the device_type, if not already present
         Raises:
-          OnboardException('fail-config'):
-            When the device vendor value does not exist as a Manufacturer in
-            NetBox.
+            OnboardException('fail-config'):
+                When the device vendor value does not exist as a Manufacturer in
+                NetBox.
 
-          OnboardException('fail-config'):
-            When the device-type exists by slug, but is assigned to a different
-            manufacturer.  This should *not* happen, but guard-rail checking
-            regardless in case two vendors have the same model name.
+            OnboardException('fail-config'):
+                When the device-type exists by slug, but is assigned to a different
+                manufacturer.  This should *not* happen, but guard-rail checking
+                regardless in case two vendors have the same model name.
         """
         # First ensure that the vendor, as extracted from the network device exists
         # in NetBox.  We need the ID for this vendor when ensuring the DeviceType
@@ -509,13 +502,13 @@ class NetboxKeeper:
         """Ensure that the device role is defined / exist in NetBox or create it if it doesn't exist.
 
         Args:
-          create_device_role (bool) :Flag to indicate if we need to create the device_role, if not already present
-          default_device_role (str): Default value for the device_role, if we need to create it
-          default_device_role_color (str): Default color to assign to the device_role, if we need to create it
+            create_device_role (bool) :Flag to indicate if we need to create the device_role, if not already present
+            default_device_role (str): Default value for the device_role, if we need to create it
+            default_device_role_color (str): Default color to assign to the device_role, if we need to create it
         Raises:
-          OnboardException('fail-config'):
-            When the device role value does not exist
-            NetBox.
+            OnboardException('fail-config'):
+                When the device role value does not exist
+                NetBox.
         """
         if self.netdev.ot.role:
             return
@@ -548,8 +541,8 @@ class NetboxKeeper:
         """Ensure that the device instance exists in NetBox and is assigned the provided device role or DEFAULT_ROLE.
 
         Args:
-          default_status (str) : status assigned to a new device by default.
-          stack_separator (str): Default character to use to indicate the device is a member of a stack
+            default_status (str) : status assigned to a new device by default.
+            stack_separator (str): Default character to use to indicate the device is a member of a stack
         """
         if (self.device_num is None) or (int(self.device_num) == 1):
             device_name = self.netdev.hostname
@@ -596,17 +589,7 @@ class NetboxKeeper:
 
         self.primary_ip.save()
 
-        # Ensure the primary IP is assigned to the device
-        self.device.primary_ip4 = self.primary_ip
-        self.device.save()
+        onboarding_cls = netdev_dict['onboarding_class']()
+        onboarding_cls.run(onboarding_kwargs=onboarding_kwargs)
 
-    def ensure_device(self):
-        """Ensure that the device represented by the DevNetKeeper exists in the NetBox system."""
-        self.ensure_device_type()
-        self.ensure_device_role()
-        self.ensure_device_instance()
-        if ((int(self.device_num) == 1) or self.device_num is None) and PLUGIN_SETTINGS[
-            "create_management_interface_if_missing"
-        ]:
-            self.ensure_interface()
-            self.ensure_primary_ip()
+        self.created_device = onboarding_cls.created_device
