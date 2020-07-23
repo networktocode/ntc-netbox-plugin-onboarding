@@ -1,6 +1,7 @@
 from netbox_onboarding.netbox_keeper import NetboxKeeper
 
 
+
 class Onboarding(object):
     def __init__(self):
         self.created_device = None

@@ -22,6 +22,9 @@ class OnboardingDriverExtensions:
         Method will determine what type of onboarding class is to be used and assign it to
         self.onboarding_class.
 
+        Result of this method is used by the OnboardingManager to
+        initiate the instance of the onboarding class.
+
         Returns:
             (Onboarding Class): Onboarding class to be used
         """

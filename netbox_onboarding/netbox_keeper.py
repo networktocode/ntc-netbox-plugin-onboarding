@@ -12,7 +12,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .exceptions import OnboardException
 import logging
 import re
 
@@ -26,6 +25,9 @@ from ipam.models import IPAddress
 from .constants import NETMIKO_TO_NAPALM
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
+
+
+from .exceptions import OnboardException
 
 
 class NetboxKeeper:
@@ -244,8 +246,7 @@ class NetboxKeeper:
                 slug=self.netdev_nb_platform_slug
             )
 
-            logging.info(
-                f"PLATFORM: found in NetBox {self.netdev_nb_platform_slug}")
+            logging.info(f"PLATFORM: found in NetBox {self.netdev_nb_platform_slug}")
 
         except Platform.DoesNotExist:
             if create_platform_if_missing:
@@ -291,8 +292,8 @@ class NetboxKeeper:
             )
 
         if onboarded_device:
-            logging.info(
-                f"Found device with primary-ip IP: {onboarded_device.name}")
+            logging.info(f"Found device with primary-ip IP: {onboarded_device.name}")
+
             lookup_args = {'pk': onboarded_device.pk,
                            'defaults': dict(
                                name=self.netdev_hostname,
@@ -316,8 +317,8 @@ class NetboxKeeper:
                            }
 
         try:
-            self.device, created = Device.objects.update_or_create(
-                **lookup_args)
+            self.device, created = Device.objects.update_or_create(**lookup_args)
+
 
             if created:
                 logging.info(f"CREATED device: {self.netdev_hostname}")
@@ -351,8 +352,7 @@ class NetboxKeeper:
         )
 
         if created or not self.nb_primary_ip.interface:
-            logging.info("ASSIGN: IP address %s to %s",
-                         self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
+            logging.info("ASSIGN: IP address %s to %s", self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
             self.nb_primary_ip.interface = self.nb_mgmt_ifname
             self.nb_primary_ip.save()
 
