@@ -103,7 +103,7 @@ class NetdevKeeper:
         self.devices_dict = {}
 
     def device_count(self):
-        """Return the device count discovered"""
+        """Return the device count discovered."""
         return len(self.devices_dict.keys())
 
     def get_devices(self):
@@ -411,7 +411,7 @@ class NetboxKeeper:
         """Create an instance and initialize the managed attributes that are used throughout the onboard processing.
 
         Args:
-          netdev (NetdevKeeper): instance
+            netdev (NetdevKeeper): instance
         """
         self.netdev = netdev
         self.device_num = device_num

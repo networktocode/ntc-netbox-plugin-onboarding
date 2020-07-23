@@ -95,16 +95,11 @@ individual devices. The primary (first) unit in the stack will:
 - Will **not** have the `stack_separator` in the name of the device, by using colon (:) this would
 override any default application port with automation systems.
 
-All of the additional units will have the separator_indicator separating the name from the unit
-number. There **will not** be a primary IP address assigned to the unit. Assuming that there is a
-methodology to parse each of the model numbers and serial numbers from a command output, there will
-be added in about the device that is unique to the device of serial number, model number.
+All of the additional units will have the `separator_indicator` separating the name from the unit
+number. There **will not** be a primary IP address assigned to the unit. Each device will have its
+own serial number and model number. Modeling the physical real world.
 
-> The idea of the stacking is that there is a single management IP address for multiple switch
-> units. Thus there will not be hte primary IP and is tracked for physical inventory, but not for
-> logical inventory.
-
-So if there was a switch stack with 4 units being added, using the defaults you will have the
+Example - if there was a switch stack with 4 units being added, using the defaults you will have the
 following setup:  
 
 Device Name: nyc01-sw01
@@ -122,6 +117,8 @@ Stack IP Address: 192.0.2.10/24
 
 These are the list of tested stacking platforms. This should help to provide confidence in what platforms can be
 onboarded as a stack. Additional testing specifics can be found [here](docs/testing_parsers.md) in the `docs\`.
+
+- Cisco IOS
 
 ### Consult the status of onboarding tasks
 

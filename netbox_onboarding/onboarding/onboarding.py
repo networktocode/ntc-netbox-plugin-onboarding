@@ -1,19 +1,35 @@
+"""Representation of the object types for onboarding of devices."""
 from netbox_onboarding.netbox_keeper import NetboxKeeper
 
 
-class Onboarding(object):
+class Onboarding:
+    """Onboarding Object."""
+
     def __init__(self):
+        """Initialization of Onboarding object."""
         self.created_device = None
 
 
 class StandaloneOnboarding(Onboarding):
+    """Onboarding of Standalone device.
+
+    Args:
+        Onboarding (Onboarding): Class of the onboarding object
+    """
+
     def run(self, onboarding_kwargs):
+        """Execute onboarding tasks."""
         nb = NetboxKeeper(**onboarding_kwargs)
         nb.ensure_device()
         self.created_device = nb.device
 
+
 class CiscoStackOnboarding(Onboarding):
+    """Class for the onboarding of Cisco Stacks."""
+
     pass
+
+
 #     def run(self):
 #         def _stack_hostname(slot_number):
 #             return self.netdev.hostname if slot_number == 1 else "{}-{}".format(self.netdev.hostname, slot_number)

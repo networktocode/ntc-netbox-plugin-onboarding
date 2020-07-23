@@ -1,3 +1,6 @@
+"""Onboarding exception handling."""
+
+
 class OnboardException(Exception):
     """A failure occurred during the onboarding process.
 
@@ -14,9 +17,11 @@ class OnboardException(Exception):
     )
 
     def __init__(self, reason, message, **kwargs):
+        """Init of the Onboarding exception types."""
         super(OnboardException, self).__init__(kwargs)
         self.reason = reason
         self.message = message
 
     def __str__(self):
+        """String representation of Exception."""
         return f"{self.__class__.__name__}: {self.reason}: {self.message}"

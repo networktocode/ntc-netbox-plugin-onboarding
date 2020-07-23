@@ -27,11 +27,10 @@ class OnboardingDriverExtensions:
         """
         self._get_stack_commands_output()
         self._parse_with_textfsm()
-        if len(self.driver_addon_result['device_list']) <= 1:
+        if len(self.driver_addon_result["device_list"]) <= 1:
             return StandaloneOnboarding
         else:
             return CiscoStackOnboarding
-
 
     def _get_stack_commands_output(self):
         """Method to execute command(s) to get necessary info to determine the number of devices in a stack.
@@ -87,18 +86,19 @@ class OnboardingDriverExtensions:
         dictionary. This is what will be in the device name after the delination character such as demo_swt01:4.
         """
         device_list = []
-        
+
         # Onboarding of the IOSv device needs to be only from NAPALM getters
-        if "IOSv" not in self.driver_addon_result['show_version']:
+        if "IOSv" not in self.driver_addon_result["show_version"]:
             version_parsed = parse_output(
-                platform="cisco_ios", command="show version", data=self.driver_addon_result['show_version'])
+                platform="cisco_ios", command="show version", data=self.driver_addon_result["show_version"]
+            )
             for loop_control in range(0, len(version_parsed[0]["serial"])):
                 device_list.append(
                     {
                         "position": loop_control + 1,
                         "serial_number": version_parsed[0]["serial"][loop_control],
                         "model": version_parsed[0]["hardware"][loop_control],
-                        "mac_address": version_parsed[0]["mac"][loop_control]
+                        "mac_address": version_parsed[0]["mac"][loop_control],
                     }
                 )
 
