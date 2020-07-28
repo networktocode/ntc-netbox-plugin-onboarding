@@ -29,6 +29,7 @@ def onboard_device(task_id, credentials):
     """Process a single OnboardingTask instance."""
     username = credentials.username
     password = credentials.password
+    secret = credentials.secret
 
     try:
         ot = OnboardingTask.objects.get(id=task_id)
@@ -43,7 +44,7 @@ def onboard_device(task_id, credentials):
         ot.status = OnboardingStatusChoices.STATUS_RUNNING
         ot.save()
 
-        netdev = NetdevKeeper(ot, username, password)
+        netdev = NetdevKeeper(ot, username, password, secret)
         nbk = NetboxKeeper(netdev=netdev)
 
         netdev.get_required_info()
