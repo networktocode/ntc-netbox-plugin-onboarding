@@ -552,10 +552,22 @@ class NetboxKeeper:
         self.device.primary_ip4 = self.primary_ip
         self.device.save()
 
+    def check_if_device_already_exist(self):
+        """Check if a device with the same name / site already exist in the database."""
+        try:
+            Device.objects.get(name=self.netdev.hostname, site=self.netdev.ot.site)
+            return True
+        except Device.DoesNotExist:
+            return False
+
     def ensure_device(self):
         """Ensure that the device represented by the DevNetKeeper exists in the NetBox system."""
-        self.ensure_device_type()
-        self.ensure_device_role()
+
+        # Only check the device role and device type if the device do not exist already
+        if not self.check_if_device_already_exist():
+            self.ensure_device_type()
+            self.ensure_device_role()
+
         self.ensure_device_instance()
         if PLUGIN_SETTINGS["create_management_interface_if_missing"]:
             self.ensure_interface()
