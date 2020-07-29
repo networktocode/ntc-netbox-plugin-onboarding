@@ -19,6 +19,7 @@ import socket
 from django.conf import settings
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
+from napalm.base.netmiko_helpers import netmiko_args
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
 from netmiko.ssh_exception import NetMikoTimeoutException
@@ -62,7 +63,15 @@ class NetdevKeeper:
     """Used to maintain information about the network device during the onboarding process."""
 
     def __init__(  # pylint: disable=R0913
-        self, hostname, port=None, timeout=None, username=None, password=None, secret=None, napalm_driver=None
+        self,
+        hostname,
+        port=None,
+        timeout=None,
+        username=None,
+        password=None,
+        secret=None,
+        napalm_driver=None,
+        optional_args=None,
     ):
         """Initialize the network device keeper instance and ensure the required configuration parameters are provided.
 
@@ -83,10 +92,11 @@ class NetdevKeeper:
         self.hostname = hostname
         self.port = port
         self.timeout = timeout
-        self.username = username or settings.NAPALM_USERNAME
-        self.password = password or settings.NAPALM_PASSWORD
-        self.secret = secret or settings.NAPALM_ARGS.get("secret", None)
+        self.username = username
+        self.password = password
+        self.secret = secret
         self.napalm_driver = napalm_driver
+        self.optional_args = optional_args
 
         self.facts = None
         self.ip_ifs = None
@@ -120,13 +130,24 @@ class NetdevKeeper:
         """Guess the device type of host, based on Netmiko."""
         guessed_device_type = None
 
+        netmiko_optional_args = netmiko_args(self.optional_args)
+
         remote_device = {
             "device_type": "autodetect",
             "host": self.hostname,
             "username": self.username,
             "password": self.password,
-            "secret": self.secret,
+            **netmiko_optional_args,
         }
+
+        if self.secret:
+            remote_device["secret"] = self.secret
+
+        if self.port:
+            remote_device["port"] = self.port
+
+        if self.timeout:
+            remote_device["timeout"] = self.timeout
 
         try:
             logger.info("INFO guessing device type: %s", self.hostname)
@@ -201,8 +222,13 @@ class NetdevKeeper:
             self.check_napalm_driver_name()
 
             driver = get_network_driver(self.napalm_driver)
-            optional_args = settings.NAPALM_ARGS.copy()
-            optional_args["secret"] = self.secret
+
+            optional_args = self.optional_args.copy()
+            if self.port:
+                optional_args["port"] = self.port
+
+            if self.secret:
+                optional_args["secret"] = self.secret
 
             napalm_device = driver(
                 hostname=self.hostname,
