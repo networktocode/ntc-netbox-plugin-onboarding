@@ -46,4 +46,8 @@
 
 > **No**, The plugin is leveraging the existing RQ Worker infrastructure already in place in NetBox, the only requirement is to ensure the plugin itself is installed in the Worker node.
 
+## Why don't I see a webhook generated when a new device is onboarded successfully ?
+
+> It's expected that any changes done asynchronously in NetBox currently (within a worker) will not generate a webhook.
+
 
