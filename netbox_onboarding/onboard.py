@@ -562,7 +562,6 @@ class NetboxKeeper:
 
     def ensure_device(self):
         """Ensure that the device represented by the DevNetKeeper exists in the NetBox system."""
-
         # Only check the device role and device type if the device do not exist already
         if not self.check_if_device_already_exist():
             self.ensure_device_type()
