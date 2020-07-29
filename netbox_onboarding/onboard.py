@@ -23,6 +23,7 @@ from netaddr.core import AddrFormatError
 
 from django.conf import settings
 from django.utils.text import slugify
+from django.db.models import Q
 
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
@@ -418,9 +419,8 @@ class NetboxKeeper:
         # First ensure that the vendor, as extracted from the network device exists
         # in NetBox.  We need the ID for this vendor when ensuring the DeviceType
         # instance.
-
         try:
-            self.manufacturer = Manufacturer.objects.get(slug=slugify(self.netdev.vendor))
+            self.manufacturer = Manufacturer.objects.get(slug__iexact=slugify(self.netdev.vendor))
         except Manufacturer.DoesNotExist:
             if not create_manufacturer:
                 raise OnboardException(
@@ -430,18 +430,15 @@ class NetboxKeeper:
             self.manufacturer = Manufacturer.objects.create(name=self.netdev.vendor, slug=slugify(self.netdev.vendor))
             self.manufacturer.save()
 
-        # Now see if the device type (slug) already exists,
+        # Now see if the device type already exists by searching for its slug, model or part number
         #  if so check to make sure that it is not assigned as a different manufacturer
-        # if it doesn't exist, create it if the flag 'create_device_type_if_missing' is defined
-
-        slug = self.netdev.model
-        if re.search(r"[^a-zA-Z0-9\-_]+", slug):
-            logging.warning("device model is not sluggable: %s", slug)
-            self.netdev.model = slug.replace(" ", "-")
-            logging.warning("device model is now: %s", self.netdev.model)
-
+        #  if it doesn't exist, create it if the flag 'create_device_type_if_missing' is defined
         try:
-            self.device_type = DeviceType.objects.get(slug=slugify(self.netdev.model))
+            self.device_type = DeviceType.objects.get(
+                Q(slug__iexact=slugify(self.netdev.model))
+                | Q(model__iexact=self.netdev.model)
+                | Q(part_number__iexact=self.netdev.model)
+            )
             self.netdev.ot.device_type = self.device_type.slug
             self.netdev.ot.save()
         except DeviceType.DoesNotExist:
@@ -486,7 +483,7 @@ class NetboxKeeper:
             return
 
         try:
-            device_role = DeviceRole.objects.get(slug=slugify(default_device_role))
+            device_role = DeviceRole.objects.get(slug__iexact=slugify(default_device_role))
         except DeviceRole.DoesNotExist:
             if not create_device_role:
                 raise OnboardException(
@@ -512,7 +509,7 @@ class NetboxKeeper:
           default_status (str) : status assigned to a new device by default.
         """
         try:
-            device = Device.objects.get(name=self.netdev.hostname, site=self.netdev.ot.site)
+            device = Device.objects.get(name__iexact=self.netdev.hostname, site=self.netdev.ot.site)
         except Device.DoesNotExist:
             device = Device.objects.create(
                 name=self.netdev.hostname,
