@@ -13,7 +13,6 @@ limitations under the License.
 """
 
 import logging
-import re
 import socket
 
 from napalm import get_network_driver

@@ -75,6 +75,30 @@ class NetboxKeeperTestCase(TestCase):
         self.ndk2.mgmt_ifname = "ge-0/0/0"
         self.ndk2.mgmt_pflen = 24
 
+        self.ndk3 = NetdevKeeper(self.onboarding_task2)
+        self.ndk3.hostname = "device3"
+        self.ndk3.vendor = "juniper"
+        self.ndk3.model = "srx300"
+        self.ndk3.serial_number = "123456"
+        self.ndk3.mgmt_ifname = "ge-0/0/0"
+        self.ndk3.mgmt_pflen = 24
+
+        self.ndk4 = NetdevKeeper(self.onboarding_task2)
+        self.ndk4.hostname = "device4"
+        self.ndk4.vendor = "juniper"
+        self.ndk4.model = "srx 300"
+        self.ndk4.serial_number = "123456"
+        self.ndk4.mgmt_ifname = "ge-0/0/0"
+        self.ndk4.mgmt_pflen = 24
+
+        self.ndk5 = NetdevKeeper(self.onboarding_task2)
+        self.ndk5.hostname = "device5"
+        self.ndk5.vendor = "juniper"
+        self.ndk5.model = "srx300-sys-jb"
+        self.ndk5.serial_number = "123456"
+        self.ndk5.mgmt_ifname = "ge-0/0/0"
+        self.ndk5.mgmt_pflen = 24
+
     def test_ensure_device_type_missing(self):
         """Verify ensure_device_type function when Manufacturer and DeviceType object are not present."""
         nbk = NetboxKeeper(self.ndk1)
@@ -104,41 +128,17 @@ class NetboxKeeperTestCase(TestCase):
         self.assertEqual(nbk.device_type, self.device_type1)
 
         # Case2: the model is lower case where the existing devicetype slug is in Uppercase
-        self.ndk3 = NetdevKeeper(self.onboarding_task2)
-        self.ndk3.hostname = "device3"
-        self.ndk3.vendor = "juniper"
-        self.ndk3.model = "srx300"
-        self.ndk3.serial_number = "123456"
-        self.ndk3.mgmt_ifname = "ge-0/0/0"
-        self.ndk3.mgmt_pflen = 24
-
         nbk = NetboxKeeper(self.ndk3)
         nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
         self.assertEqual(nbk.manufacturer, self.manufacturer1)
         self.assertEqual(nbk.device_type, self.device_type2)
 
         # Case3: the device model match the model of an existing device_type, not the slug
-        self.ndk4 = NetdevKeeper(self.onboarding_task2)
-        self.ndk4.hostname = "device4"
-        self.ndk4.vendor = "juniper"
-        self.ndk4.model = "srx 300"
-        self.ndk4.serial_number = "123456"
-        self.ndk4.mgmt_ifname = "ge-0/0/0"
-        self.ndk4.mgmt_pflen = 24
-
         nbk = NetboxKeeper(self.ndk4)
         nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
         self.assertEqual(nbk.device_type, self.device_type2)
 
         # Case4: the device model match the part number of an existing device_type, not the slug
-        self.ndk5 = NetdevKeeper(self.onboarding_task2)
-        self.ndk5.hostname = "device5"
-        self.ndk5.vendor = "juniper"
-        self.ndk5.model = "srx300-sys-jb"
-        self.ndk5.serial_number = "123456"
-        self.ndk5.mgmt_ifname = "ge-0/0/0"
-        self.ndk5.mgmt_pflen = 24
-
         nbk = NetboxKeeper(self.ndk5)
         nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
         self.assertEqual(nbk.device_type, self.device_type2)
