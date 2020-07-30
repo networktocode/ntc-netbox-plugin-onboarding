@@ -440,6 +440,21 @@ class NetboxKeeper:
             )
             self.netdev.ot.device_type = self.device_type.slug
             self.netdev.ot.save()
+        except DeviceType.MultipleObjectsReturned:
+            device_types = DeviceType.objects.filter(
+                Q(slug__iexact=slugify(self.netdev.model))
+                | Q(model__iexact=self.netdev.model)
+                | Q(part_number__iexact=self.netdev.model)
+            )
+            device_types_str = ",".join([item.slug for item in device_types])
+            error_message = (
+                f"ERROR, more than one device type found"
+                f"please manually define the device type "
+                f"or update/delete the existing one: {device_types_str}"
+            )
+            raise OnboardException(
+                reason="fail-config", message=error_message,
+            )
         except DeviceType.DoesNotExist:
             if not create_device_type:
                 raise OnboardException(

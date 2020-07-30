@@ -75,6 +75,11 @@ class NetboxKeeperTestCase(TestCase):
         self.ndk2.mgmt_ifname = "ge-0/0/0"
         self.ndk2.mgmt_pflen = 24
 
+        # ndk3 to ndk5 will be used to test the different form of DeviceType matches
+        #  ndk3 the model is lower case where the existing devicetype slug is in Uppercase
+        #  ndk4 the device model match the model of an existing device_type, not the slug
+        #  ndk5 the device model match the part number of an existing device_type, not the slug
+        #  ndk6 more than 1 device type is returned
         self.ndk3 = NetdevKeeper(self.onboarding_task2)
         self.ndk3.hostname = "device3"
         self.ndk3.vendor = "juniper"
@@ -142,6 +147,17 @@ class NetboxKeeperTestCase(TestCase):
         nbk = NetboxKeeper(self.ndk5)
         nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
         self.assertEqual(nbk.device_type, self.device_type2)
+
+        # Case5: Multiple devices type are returned
+        nbk = NetboxKeeper(self.ndk5)
+        DeviceType.objects.create(slug="srx300-SYS-JB", model="SRX 300 2", manufacturer=self.manufacturer1)
+        with self.assertRaises(OnboardException) as exc_info:
+            nbk.ensure_device_type(create_manufacturer=False, create_device_type=False)
+            self.assertEqual(
+                exc_info.exception.message,
+                "ERROR more than one device type found, please manually define the device type or update/delete the existing one: SRX300,srx300-SYS-JB",
+            )
+            self.assertEqual(exc_info.exception.reason, "fail-config")
 
     def test_ensure_device_role_not_exist(self):
         """Verify ensure_device_role function when DeviceRole do not already exist."""
