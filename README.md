@@ -10,9 +10,20 @@ The goal of this plugin is not to import everything about a device into NetBox b
 
 ## Installation
 
-The plugin is available as a Python package in pypi and can be installed with pip
+If using the installation pattern from the NetBox Documentation, you will need to activate the
+virtual environment before installing so that you install the package into the virtual environment.
+
+```shell
+cd /opt/netbox
+source venv/bin/activate
+```
+
+The plugin is available as a Python package in pypi and can be installed with pip. Once the
+installation is completed, then NetBox and the NetBox worker must be restarted.
+
 ```shell
 pip install ntc-netbox-plugin-onboarding
+systemctl restart netbox netbox-rq
 ```
 
 > The plugin is compatible with NetBox 2.8.1 and higher
