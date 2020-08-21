@@ -11,7 +11,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.db import models
+from dcim.models import Device
 from django.urls import reverse
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29
@@ -64,3 +67,49 @@ class OnboardingTask(models.Model):
         from utilities.querysets import RestrictedQuerySet  # pylint: disable=no-name-in-module, import-outside-toplevel
 
         objects = RestrictedQuerySet.as_manager()
+
+
+class OnboardingDevice(models.Model):
+    """The status of each Onboarded Device is tracked in the OnboardingDevice table."""
+
+    device = models.OneToOneField(to="dcim.Device", on_delete=models.CASCADE)
+    enabled = models.BooleanField(default=True, help_text="Whether (re)onboarding of this device is permitted")
+
+    @property
+    def last_check_attempt_date(self):
+        """Date of last onboarding attempt for a device."""
+        try:
+            return OnboardingTask.objects.filter(created_device=self.device).latest("created_on").created_on
+        except ValueError:
+            return "unknown"
+
+    @property
+    def last_check_successful_date(self):
+        """Date of last successful onboarding for a device."""
+        try:
+            return (
+                OnboardingTask.objects.filter(
+                    created_device=self.device, status=OnboardingStatusChoices.STATUS_SUCCEEDED
+                )
+                .latest("created_on")
+                .created_on
+            )
+        except ValueError:
+            return "unknown"
+
+    @property
+    def status(self):
+        """Last onboarding status."""
+        try:
+            return OnboardingTask.objects.filter(created_device=self.device).latest("created_on").status
+        except ValueError:
+            return "unknown"
+
+    @property
+    def last_ot(self):
+        """Last onboarding task."""
+        try:
+            return OnboardingTask.objects.filter(created_device=self.device).latest("created_on")
+        except ValueError:
+            return None
+
