@@ -14,8 +14,8 @@ limitations under the License.
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db import models
-from dcim.models import Device
 from django.urls import reverse
+from dcim.models import Device
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29
 
@@ -113,3 +113,12 @@ class OnboardingDevice(models.Model):
         except ValueError:
             return None
 
+
+@receiver(post_save, sender=Device)
+def init_onboarding_for_new_device(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
+    """Register to create a OnboardingDevice object for each new Device Object using Django Signal.
+
+    https://docs.djangoproject.com/en/3.0/ref/signals/#post-save
+    """
+    if created:
+        OnboardingDevice.objects.create(device=instance)

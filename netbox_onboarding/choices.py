@@ -22,12 +22,14 @@ class OnboardingStatusChoices(ChoiceSet):
     STATUS_PENDING = "pending"
     STATUS_RUNNING = "running"
     STATUS_SUCCEEDED = "succeeded"
+    STATUS_SKIPPED = "skipped"
 
     CHOICES = (
         (STATUS_FAILED, "failed"),
         (STATUS_PENDING, "pending"),
         (STATUS_RUNNING, "running"),
         (STATUS_SUCCEEDED, "succeeded"),
+        (STATUS_SKIPPED, "skipped"),
     )
 
 
