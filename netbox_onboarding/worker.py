@@ -15,12 +15,14 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django_rq import job
+from prometheus_client import Summary
 
 from dcim.models import Device
 
 from .choices import OnboardingFailChoices
 from .choices import OnboardingStatusChoices
 from .exceptions import OnboardException
+from .metrics import onboardingtask_results_counter
 from .models import OnboardingDevice
 from .models import OnboardingTask
 from .onboard import OnboardingManager
@@ -28,6 +30,10 @@ from .onboard import OnboardingManager
 logger = logging.getLogger("rq.worker")
 
 
+REQUEST_TIME = Summary("onboardingtask_processing_seconds", "Time spent processing onboarding request")
+
+
+@REQUEST_TIME.time()
 @job("default")
 def onboard_device(task_id, credentials):  # pylint: disable=too-many-statements
     """Process a single OnboardingTask instance."""
@@ -97,5 +103,7 @@ def onboard_device(task_id, credentials):  # pylint: disable=too-many-statements
         ot.message = str(exc)
         ot.save()
         onboarding_status = False
+
+    onboardingtask_results_counter.labels(status=ot.status).inc()
 
     return dict(ok=onboarding_status)
