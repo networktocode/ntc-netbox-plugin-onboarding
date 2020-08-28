@@ -13,6 +13,7 @@ limitations under the License.
 """
 
 from django import forms
+from django.db import transaction
 from django_rq import get_queue
 
 from utilities.forms import BootstrapMixin
@@ -156,5 +157,7 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
         model = super().save(commit=commit, **kwargs)
         if commit:
             credentials = Credentials(self.data.get("username"), self.data.get("password"), self.data.get("secret"))
-            get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
+            transaction.on_commit(
+                lambda: get_queue("default").enqueue("netbox_onboarding.worker.onboard_device", model.pk, credentials)
+            )
         return model
