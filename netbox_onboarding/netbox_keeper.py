@@ -349,10 +349,10 @@ class NetboxKeeper:
             address=f"{self.netdev_mgmt_ip_address}/{self.netdev_mgmt_pflen}"
         )
 
-        if created or not self.nb_primary_ip.interface:
+        if created or not self.nb_primary_ip in self.nb_mgmt_ifname.ip_addresses.all():
             logging.info("ASSIGN: IP address %s to %s", self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
-            self.nb_primary_ip.interface = self.nb_mgmt_ifname
-            self.nb_primary_ip.save()
+            self.nb_mgmt_ifname.ip_addresses.add(self.nb_primary_ip)
+            self.nb_mgmt_ifname.save()
 
         # Ensure the primary IP is assigned to the device
         self.device.primary_ip4 = self.nb_primary_ip

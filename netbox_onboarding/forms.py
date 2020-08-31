@@ -16,9 +16,8 @@ from django import forms
 from django.db import transaction
 from django_rq import get_queue
 
-from utilities.forms import BootstrapMixin
+from utilities.forms import BootstrapMixin, CSVModelForm
 from dcim.models import Site, Platform, DeviceRole, DeviceType
-from extras.forms import CustomFieldModelCSVForm
 
 from .models import OnboardingTask
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
@@ -34,7 +33,7 @@ class OnboardingTaskForm(BootstrapMixin, forms.ModelForm):
         required=True, label="IP address", help_text="IP Address/DNS Name of the device to onboard"
     )
 
-    site = forms.ModelChoiceField(required=True, queryset=Site.objects.all(), to_field_name="slug")
+    site = forms.ModelChoiceField(required=True, queryset=Site.objects.all())
 
     username = forms.CharField(required=False, help_text="Device username (will not be stored in database)")
     password = forms.CharField(
@@ -107,7 +106,7 @@ class OnboardingTaskFilterForm(BootstrapMixin, forms.ModelForm):
         fields = ["q", "site", "platform", "status", "failed_reason"]
 
 
-class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
+class OnboardingTaskFeedCSVForm(CSVModelForm):
     """Form for entering CSV to bulk-import OnboardingTask entries."""
 
     site = forms.ModelChoiceField(
@@ -150,7 +149,14 @@ class OnboardingTaskFeedCSVForm(CustomFieldModelCSVForm):
 
     class Meta:  # noqa: D106 "Missing docstring in public nested class"
         model = OnboardingTask
-        fields = OnboardingTask.csv_headers
+        fields = [
+            "site",
+            "ip_address",
+            "port",
+            "timeout",
+            "platform",
+            "role",
+        ]
 
     def save(self, commit=True, **kwargs):
         """Save the model, and add it and the associated credentials to the onboarding worker queue."""

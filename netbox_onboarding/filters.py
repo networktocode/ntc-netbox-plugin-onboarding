@@ -26,8 +26,6 @@ class OnboardingTaskFilter(NameSlugSearchFilterSet):
 
     q = django_filters.CharFilter(method="search", label="Search",)
 
-    site_id = django_filters.ModelMultipleChoiceFilter(queryset=Site.objects.all(), label="Site (ID)",)
-
     site = django_filters.ModelMultipleChoiceFilter(
         field_name="site__slug", queryset=Site.objects.all(), to_field_name="slug", label="Site (slug)",
     )
@@ -46,7 +44,7 @@ class OnboardingTaskFilter(NameSlugSearchFilterSet):
         model = OnboardingTask
         fields = ["id", "site", "site_id", "platform", "role", "status", "failed_reason"]
 
-    def search(self, queryset, name, value):
+    def search(self, queryset, name, value):  # pylint: disable=unused-argument, no-self-use
         """Perform the filtered search."""
         if not value.strip():
             return queryset
@@ -55,7 +53,7 @@ class OnboardingTaskFilter(NameSlugSearchFilterSet):
             | Q(ip_address__icontains=value)
             | Q(site__name__icontains=value)
             | Q(platform__name__icontains=value)
-            | Q(device__icontains=value)
+            | Q(created_device__name__icontains=value)
             | Q(status__icontains=value)
             | Q(failed_reason__icontains=value)
             | Q(message__icontains=value)

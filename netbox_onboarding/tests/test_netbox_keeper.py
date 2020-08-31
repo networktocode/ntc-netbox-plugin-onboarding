@@ -308,7 +308,7 @@ class NetboxKeeperTestCase(TestCase):
         nbk.ensure_device()
 
         self.assertIsInstance(nbk.nb_primary_ip, IPAddress)
-        self.assertEqual(nbk.nb_primary_ip.interface.name, "ge-0/0/0")
+        self.assertIn(nbk.nb_primary_ip, Interface.objects.get(device=nbk.device, name="ge-0/0/0").ip_addresses.all())
         self.assertEqual(nbk.device.primary_ip, nbk.nb_primary_ip)
 
     def test_ensure_device_platform_missing(self):
