@@ -20,6 +20,7 @@ class OnboardingTaskTable(BaseTable):
     """Table for displaying OnboardingTask instances."""
 
     pk = ToggleColumn()
+    id = tables.LinkColumn()
     site = tables.LinkColumn()
     platform = tables.LinkColumn()
     created_device = tables.LinkColumn()
@@ -28,6 +29,7 @@ class OnboardingTaskTable(BaseTable):
         model = OnboardingTask
         fields = (
             "pk",
+            "id",
             "created_on",
             "ip_address",
             "site",

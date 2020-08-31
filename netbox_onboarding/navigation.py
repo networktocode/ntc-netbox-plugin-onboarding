@@ -17,19 +17,19 @@ from utilities.choices import ButtonColorChoices
 
 menu_items = (
     PluginMenuItem(
-        link="plugins:netbox_onboarding:onboarding_task_list",
+        link="plugins:netbox_onboarding:onboardingtask_list",
         link_text="Onboarding Tasks",
         permissions=["netbox_onboarding.view_onboardingtask"],
         buttons=(
             PluginMenuButton(
-                link="plugins:netbox_onboarding:onboarding_task_add",
+                link="plugins:netbox_onboarding:onboardingtask_add",
                 title="Onboard",
                 icon_class="fa fa-plus",
                 color=ButtonColorChoices.GREEN,
                 permissions=["netbox_onboarding.add_onboardingtask"],
             ),
             PluginMenuButton(
-                link="plugins:netbox_onboarding:onboarding_task_import",
+                link="plugins:netbox_onboarding:onboardingtask_import",
                 title="Bulk Onboard",
                 icon_class="fa fa-download",
                 color=ButtonColorChoices.BLUE,
