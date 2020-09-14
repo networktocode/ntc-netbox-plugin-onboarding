@@ -12,7 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from django.db import models
+from django.urls import reverse
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
+from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29
 
 
 class OnboardingTask(models.Model):
@@ -47,18 +49,18 @@ class OnboardingTask(models.Model):
 
     created_on = models.DateTimeField(auto_now_add=True)
 
-    csv_headers = [
-        "site",
-        "ip_address",
-        "port",
-        "timeout",
-        "platform",
-        "role",
-    ]
-
     class Meta:  # noqa: D106 "missing docstring in public nested class"
         ordering = ["created_on"]
 
     def __str__(self):
         """String representation of an OnboardingTask."""
         return f"{self.site} : {self.ip_address}"
+
+    def get_absolute_url(self):
+        """Provide absolute URL to an OnboardingTask."""
+        return reverse("plugins:netbox_onboarding:onboardingtask", kwargs={"pk": self.pk})
+
+    if NETBOX_RELEASE_CURRENT >= NETBOX_RELEASE_29:
+        from utilities.querysets import RestrictedQuerySet  # pylint: disable=no-name-in-module, import-outside-toplevel
+
+        objects = RestrictedQuerySet.as_manager()
