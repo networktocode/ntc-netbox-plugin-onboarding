@@ -21,6 +21,7 @@ from dcim.models import Device
 from .choices import OnboardingFailChoices
 from .choices import OnboardingStatusChoices
 from .exceptions import OnboardException
+from .models import OnboardingDevice
 from .models import OnboardingTask
 from .onboard import OnboardingManager
 
@@ -29,7 +30,7 @@ logger.setLevel(logging.DEBUG)
 
 
 @job("default")
-def onboard_device(task_id, credentials):  # pylint: disable=R0915
+def onboard_device(task_id, credentials):  # pylint: disable=too-many-statements
     """Process a single OnboardingTask instance."""
     username = credentials.username
     password = credentials.password
@@ -44,6 +45,12 @@ def onboard_device(task_id, credentials):  # pylint: disable=R0915
         try:
             if ot.ip_address:
                 onboarded_device = Device.objects.get(primary_ip4__address__net_host=ot.ip_address)
+
+            if OnboardingDevice.objects.filter(device=onboarded_device, enabled=False):
+                ot.status = OnboardingStatusChoices.STATUS_SKIPPED
+
+                return dict(ok=True)
+
         except Device.DoesNotExist as exc:
             logger.info("Getting device with IP lookup failed: %s", str(exc))
         except Device.MultipleObjectsReturned as exc:
@@ -80,7 +87,7 @@ def onboard_device(task_id, credentials):  # pylint: disable=R0915
         ot.save()
         onboarding_status = False
 
-    except Exception as exc:  # pylint: disable=W0703
+    except Exception as exc:  # pylint: disable=broad-except
         if onboarded_device:
             ot.created_device = onboarded_device
 
