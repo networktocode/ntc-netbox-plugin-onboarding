@@ -12,7 +12,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from django.urls import path
+from extras.views import ObjectChangeLogView
 
+from .models import OnboardingTask
 from .views import (
     OnboardingTaskView,
     OnboardingTaskListView,
@@ -27,4 +29,10 @@ urlpatterns = [
     path("add/", OnboardingTaskCreateView.as_view(), name="onboardingtask_add"),
     path("delete/", OnboardingTaskBulkDeleteView.as_view(), name="onboardingtask_bulk_delete"),
     path("import/", OnboardingTaskFeedBulkImportView.as_view(), name="onboardingtask_import"),
+    path(
+        "<int:pk>/changelog/",
+        ObjectChangeLogView.as_view(),
+        name="onboardingtask_changelog",
+        kwargs={"model": OnboardingTask},
+    ),
 ]

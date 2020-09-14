@@ -30,7 +30,7 @@ class OnboardingTaskTable(BaseTable):
         fields = (
             "pk",
             "id",
-            "created_on",
+            "created",
             "ip_address",
             "site",
             "platform",
@@ -50,7 +50,7 @@ class OnboardingTaskFeedBulkTable(BaseTable):
         model = OnboardingTask
         fields = (
             "id",
-            "created_on",
+            "created",
             "site",
             "platform",
             "ip_address",
