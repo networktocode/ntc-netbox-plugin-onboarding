@@ -19,8 +19,15 @@ from dcim.models import Device
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
 from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29
 
+# Support NetBox 2.8
+if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
+    from utilities.models import ChangeLoggedModel  # pylint: disable=no-name-in-module, import-error
+# Support NetBox 2.9
+else:
+    from extras.models import ChangeLoggedModel  # pylint: disable=no-name-in-module, import-error
 
-class OnboardingTask(models.Model):
+
+class OnboardingTask(ChangeLoggedModel):
     """The status of each onboarding Task is tracked in the OnboardingTask table."""
 
     created_device = models.ForeignKey(to="dcim.Device", on_delete=models.SET_NULL, blank=True, null=True)
@@ -50,11 +57,6 @@ class OnboardingTask(models.Model):
         help_text="Timeout period in sec to wait while connecting to the device", default=30
     )
 
-    created_on = models.DateTimeField(auto_now_add=True)
-
-    class Meta:  # noqa: D106 "missing docstring in public nested class"
-        ordering = ["created_on"]
-
     def __str__(self):
         """String representation of an OnboardingTask."""
         return f"{self.site} : {self.ip_address}"
@@ -78,40 +80,67 @@ class OnboardingDevice(models.Model):
     @property
     def last_check_attempt_date(self):
         """Date of last onboarding attempt for a device."""
-        try:
-            return OnboardingTask.objects.filter(created_device=self.device).latest("created_on").created_on
-        except ValueError:
+        if self.device.primary_ip4:
+            try:
+                return (
+                    OnboardingTask.objects.filter(
+                        ip_address=self.device.primary_ip4.address.ip.format()  # pylint: disable=no-member
+                    )
+                    .latest("last_updated")
+                    .created
+                )
+            except OnboardingTask.DoesNotExist:
+                return "unknown"
+        else:
             return "unknown"
 
     @property
     def last_check_successful_date(self):
         """Date of last successful onboarding for a device."""
-        try:
-            return (
-                OnboardingTask.objects.filter(
-                    created_device=self.device, status=OnboardingStatusChoices.STATUS_SUCCEEDED
+        if self.device.primary_ip4:
+            try:
+                return (
+                    OnboardingTask.objects.filter(
+                        ip_address=self.device.primary_ip4.address.ip.format(),  # pylint: disable=no-member
+                        status=OnboardingStatusChoices.STATUS_SUCCEEDED,
+                    )
+                    .latest("last_updated")
+                    .created
                 )
-                .latest("created_on")
-                .created_on
-            )
-        except ValueError:
+            except OnboardingTask.DoesNotExist:
+                return "unknown"
+        else:
             return "unknown"
 
     @property
     def status(self):
         """Last onboarding status."""
-        try:
-            return OnboardingTask.objects.filter(created_device=self.device).latest("created_on").status
-        except ValueError:
+        if self.device.primary_ip4:
+            try:
+                return (
+                    OnboardingTask.objects.filter(
+                        ip_address=self.device.primary_ip4.address.ip.format()  # pylint: disable=no-member
+                    )
+                    .latest("last_updated")
+                    .status
+                )
+            except OnboardingTask.DoesNotExist:
+                return "unknown"
+        else:
             return "unknown"
 
     @property
     def last_ot(self):
         """Last onboarding task."""
-        try:
-            return OnboardingTask.objects.filter(created_device=self.device).latest("created_on")
-        except ValueError:
-            return None
+        if self.device.primary_ip4:
+            try:
+                return OnboardingTask.objects.filter(
+                    ip_address=self.device.primary_ip4.address.ip.format()  # pylint: disable=no-member
+                ).latest("last_updated")
+            except OnboardingTask.DoesNotExist:
+                return "unknown"
+        else:
+            return "unknown"
 
 
 @receiver(post_save, sender=Device)

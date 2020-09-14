@@ -18,6 +18,11 @@
         <li role="presentation"{% if not active_tab %} class="active"{% endif %}>
             <a href="{{ onboardingtask.get_absolute_url }}">Onboarding Task</a>
         </li>
+        {% if perms.extras.view_objectchange %}
+            <li role="presentation"{% if active_tab == 'changelog' %} class="active"{% endif %}>
+                <a href="{% url 'plugins:netbox_onboarding:onboardingtask_changelog' pk=onboardingtask.pk %}">Change Log</a>
+            </li>
+        {% endif %}
     </ul>
 {% endblock %}
 
@@ -74,8 +79,8 @@
                     <td>{{ onboardingtask.message|placeholder }}</td>
                 </tr>
                 <tr>
-                    <td>Created On</td>
-                    <td>{{ onboardingtask.created_on|placeholder }}</td>
+                    <td>Created</td>
+                    <td>{{ onboardingtask.created|placeholder }}</td>
                 </tr>
             </table>
         </div>
