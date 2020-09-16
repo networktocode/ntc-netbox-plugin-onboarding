@@ -268,10 +268,11 @@ class NetdevKeeper:
 
             try:
                 module_name = PLUGIN_SETTINGS["onboarding_extensions_map"].get(self.napalm_driver)
-                module = importlib.import_module(module_name)
-                driver_addon_class = module.OnboardingDriverExtensions(napalm_device=napalm_device)
-                self.onboarding_class = driver_addon_class.onboarding_class
-                self.driver_addon_result = driver_addon_class.ext_result
+                if module_name:
+                    module = importlib.import_module(module_name)
+                    driver_addon_class = module.OnboardingDriverExtensions(napalm_device=napalm_device)
+                    self.onboarding_class = driver_addon_class.onboarding_class
+                    self.driver_addon_result = driver_addon_class.ext_result
             except ImportError as exc:
                 logger.info("No onboarding extension found for driver %s", self.napalm_driver)
 
