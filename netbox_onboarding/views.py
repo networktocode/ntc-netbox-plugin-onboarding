@@ -25,8 +25,7 @@ from .forms import OnboardingTaskForm, OnboardingTaskFilterForm, OnboardingTaskF
 from .models import OnboardingTask
 from .tables import OnboardingTaskTable, OnboardingTaskFeedBulkTable
 
-log = logging.getLogger("rq.worker")
-log.setLevel(logging.DEBUG)
+logger = logging.getLogger("rq.worker")
 
 
 if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
