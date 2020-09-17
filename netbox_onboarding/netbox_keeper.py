@@ -25,6 +25,8 @@ from ipam.models import IPAddress
 from .constants import NETMIKO_TO_NAPALM_STATIC
 from .exceptions import OnboardException
 
+logger = logging.getLogger("rq.worker")
+
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
@@ -149,9 +151,9 @@ class NetboxKeeper:
 
         slug = self.netdev_model
         if self.netdev_model and re.search(r"[^a-zA-Z0-9\-_]+", slug):
-            logging.warning("device model is not sluggable: %s", slug)
+            logger.warning("device model is not sluggable: %s", slug)
             self.netdev_model = slug.replace(" ", "-")
-            logging.warning("device model is now: %s", self.netdev_model)
+            logger.warning("device model is now: %s", self.netdev_model)
 
         # Use declared device type or auto-discovered model
         nb_device_type_text = self.netdev_nb_device_type_slug or self.netdev_model
@@ -172,7 +174,7 @@ class NetboxKeeper:
 
         except DeviceType.DoesNotExist:
             if create_device_type:
-                logging.info("CREATE: device-type: %s", self.netdev_model)
+                logger.info("CREATE: device-type: %s", self.netdev_model)
                 self.nb_device_type = DeviceType.objects.create(
                     slug=nb_device_type_slug, model=nb_device_type_slug.upper(), manufacturer=self.nb_manufacturer,
                 )
@@ -237,7 +239,7 @@ class NetboxKeeper:
 
             self.nb_platform = Platform.objects.get(slug=self.netdev_nb_platform_slug)
 
-            logging.info("PLATFORM: found in NetBox %s", self.netdev_nb_platform_slug)
+            logger.info("PLATFORM: found in NetBox %s", self.netdev_nb_platform_slug)
 
         except Platform.DoesNotExist:
             if create_platform_if_missing:
@@ -278,7 +280,7 @@ class NetboxKeeper:
             if self.netdev_mgmt_ip_address:
                 onboarded_device = Device.objects.get(primary_ip4__address__net_host=self.netdev_mgmt_ip_address)
         except Device.DoesNotExist:
-            logging.info(
+            logger.info(
                 "Could not find existing NetBox device for requested primary IP address (%s)",
                 self.netdev_mgmt_ip_address,
             )
@@ -291,7 +293,7 @@ class NetboxKeeper:
         if onboarded_device:
             # Construct lookup arguments if onboarded device already exists in NetBox
 
-            logging.info(
+            logger.info(
                 "Found existing NetBox device (%s) for requested primary IP address (%s)",
                 onboarded_device.name,
                 self.netdev_mgmt_ip_address,
@@ -328,9 +330,9 @@ class NetboxKeeper:
             self.device, created = Device.objects.update_or_create(**lookup_args)
 
             if created:
-                logging.info("CREATED device: %s", self.netdev_hostname)
+                logger.info("CREATED device: %s", self.netdev_hostname)
             else:
-                logging.info("GOT/UPDATED device: %s", self.netdev_hostname)
+                logger.info("GOT/UPDATED device: %s", self.netdev_hostname)
 
         except Device.MultipleObjectsReturned:
             raise OnboardException(
@@ -350,7 +352,7 @@ class NetboxKeeper:
         )
 
         if created or not self.nb_primary_ip in self.nb_mgmt_ifname.ip_addresses.all():
-            logging.info("ASSIGN: IP address %s to %s", self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
+            logger.info("ASSIGN: IP address %s to %s", self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
             self.nb_mgmt_ifname.ip_addresses.add(self.nb_primary_ip)
             self.nb_mgmt_ifname.save()
 

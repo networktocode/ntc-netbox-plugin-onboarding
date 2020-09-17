@@ -26,7 +26,6 @@ from .models import OnboardingTask
 from .onboard import OnboardingManager
 
 logger = logging.getLogger("rq.worker")
-logger.setLevel(logging.DEBUG)
 
 
 @job("default")
@@ -80,7 +79,7 @@ def onboard_device(task_id, credentials):  # pylint: disable=too-many-statements
         if onboarded_device:
             ot.created_device = onboarded_device
 
-        logger.error("Onboarding Error - OnboardException")
+        logger.error("%s", exc)
         ot.status = OnboardingStatusChoices.STATUS_FAILED
         ot.failed_reason = exc.reason
         ot.message = exc.message

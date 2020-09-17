@@ -33,7 +33,6 @@ from .constants import NETMIKO_TO_NAPALM_STATIC
 from .exceptions import OnboardException
 
 logger = logging.getLogger("rq.worker")
-logger.setLevel(logging.DEBUG)
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
@@ -266,15 +265,26 @@ class NetdevKeeper:
             logger.info("COLLECT: device interface IPs")
             self.ip_ifs = napalm_device.get_interfaces_ip()
 
-            try:
-                module_name = PLUGIN_SETTINGS["onboarding_extensions_map"].get(self.napalm_driver)
-                if module_name:
+            module_name = PLUGIN_SETTINGS["onboarding_extensions_map"].get(self.napalm_driver)
+
+            if module_name:
+                try:
                     module = importlib.import_module(module_name)
                     driver_addon_class = module.OnboardingDriverExtensions(napalm_device=napalm_device)
                     self.onboarding_class = driver_addon_class.onboarding_class
                     self.driver_addon_result = driver_addon_class.ext_result
-            except ImportError as exc:
-                logger.info("No onboarding extension found for driver %s", self.napalm_driver)
+                except ModuleNotFoundError as exc:
+                    raise OnboardException(
+                        reason="fail-general",
+                        message=f"ERROR: ModuleNotFoundError: Onboarding extension for napalm driver {self.napalm_driver} configured but can not be imported per configuration",
+                    )
+                except ImportError as exc:
+                    raise OnboardException(reason="fail-general", message="ERROR: ImportError: %s" % exc.args[0])
+            else:
+                logger.info(
+                    "INFO: No onboarding extension defined for napalm driver %s, using default napalm driver",
+                    self.napalm_driver,
+                )
 
         except ConnectionException as exc:
             raise OnboardException(reason="fail-login", message=exc.args[0])
