@@ -25,8 +25,11 @@ class DeviceContent(PluginTemplateExtension):  # pylint: disable=abstract-method
         """Show table on right side of view."""
         onboarding = OnboardingDevice.objects.filter(device=self.context["object"]).first()
 
+        if not onboarding:
+            return ""
+
         if not onboarding.enabled:
-            return None
+            return ""
 
         status = onboarding.status
         last_check_attempt_date = onboarding.last_check_attempt_date
