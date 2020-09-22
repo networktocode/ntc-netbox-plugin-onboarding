@@ -32,6 +32,8 @@ from netbox_onboarding.onboarding.onboarding import StandaloneOnboarding
 from .constants import NETMIKO_TO_NAPALM_STATIC
 from .exceptions import OnboardException
 
+logger = logging.getLogger("rq.worker")
+
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
@@ -144,7 +146,7 @@ class NetdevKeeper:
           OnboardException('fail-connect'):
             When device unreachable
         """
-        logging.info("CHECK: IP %s:%s", self.hostname, self.port)
+        logger.info("CHECK: IP %s:%s", self.hostname, self.port)
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -169,24 +171,24 @@ class NetdevKeeper:
         }
 
         try:
-            logging.info("INFO guessing device type: %s", self.hostname)
+            logger.info("INFO guessing device type: %s", self.hostname)
             guesser = SSHDetect(**remote_device)
             guessed_device_type = guesser.autodetect()
-            logging.info("INFO guessed device type: %s", guessed_device_type)
+            logger.info("INFO guessed device type: %s", guessed_device_type)
 
         except NetMikoAuthenticationException as err:
-            logging.error("ERROR %s", err)
+            logger.error("ERROR %s", err)
             raise OnboardException(reason="fail-login", message=f"ERROR: {str(err)}")
 
         except (NetMikoTimeoutException, SSHException) as err:
-            logging.error("ERROR: %s", str(err))
+            logger.error("ERROR: %s", str(err))
             raise OnboardException(reason="fail-connect", message=f"ERROR: {str(err)}")
 
         except Exception as err:
-            logging.error("ERROR: %s", str(err))
+            logger.error("ERROR: %s", str(err))
             raise OnboardException(reason="fail-general", message=f"ERROR: {str(err)}")
 
-        logging.info("INFO device type is: %s", guessed_device_type)
+        logger.info("INFO device type is: %s", guessed_device_type)
 
         return guessed_device_type
 
@@ -194,7 +196,7 @@ class NetdevKeeper:
         """Sets napalm driver name."""
         if not self.napalm_driver:
             netmiko_device_type = self.guess_netmiko_device_type()
-            logging.info("Guessed Netmiko Device Type: %s", netmiko_device_type)
+            logger.info("Guessed Netmiko Device Type: %s", netmiko_device_type)
 
             self.netmiko_device_type = netmiko_device_type
 
@@ -234,7 +236,7 @@ class NetdevKeeper:
 
         self.check_reachability()
 
-        logging.info("COLLECT: device information %s", self.hostname)
+        logger.info("COLLECT: device information %s", self.hostname)
 
         try:
             # Get Napalm Driver with Netmiko if needed
@@ -257,20 +259,32 @@ class NetdevKeeper:
 
             napalm_device.open()
 
-            logging.info("COLLECT: device facts")
+            logger.info("COLLECT: device facts")
             self.facts = napalm_device.get_facts()
 
-            logging.info("COLLECT: device interface IPs")
+            logger.info("COLLECT: device interface IPs")
             self.ip_ifs = napalm_device.get_interfaces_ip()
 
-            try:
-                module_name = PLUGIN_SETTINGS["onboarding_extensions_map"].get(self.napalm_driver)
-                module = importlib.import_module(module_name)
-                driver_addon_class = module.OnboardingDriverExtensions(napalm_device=napalm_device)
-                self.onboarding_class = driver_addon_class.onboarding_class
-                self.driver_addon_result = driver_addon_class.ext_result
-            except ImportError as exc:
-                logging.info("No onboarding extension found for driver %s", self.napalm_driver)
+            module_name = PLUGIN_SETTINGS["onboarding_extensions_map"].get(self.napalm_driver)
+
+            if module_name:
+                try:
+                    module = importlib.import_module(module_name)
+                    driver_addon_class = module.OnboardingDriverExtensions(napalm_device=napalm_device)
+                    self.onboarding_class = driver_addon_class.onboarding_class
+                    self.driver_addon_result = driver_addon_class.ext_result
+                except ModuleNotFoundError as exc:
+                    raise OnboardException(
+                        reason="fail-general",
+                        message=f"ERROR: ModuleNotFoundError: Onboarding extension for napalm driver {self.napalm_driver} configured but can not be imported per configuration",
+                    )
+                except ImportError as exc:
+                    raise OnboardException(reason="fail-general", message="ERROR: ImportError: %s" % exc.args[0])
+            else:
+                logger.info(
+                    "INFO: No onboarding extension defined for napalm driver %s, using default napalm driver",
+                    self.napalm_driver,
+                )
 
         except ConnectionException as exc:
             raise OnboardException(reason="fail-login", message=exc.args[0])
