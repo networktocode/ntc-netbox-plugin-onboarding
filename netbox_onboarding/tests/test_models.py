@@ -13,7 +13,8 @@ limitations under the License.
 """
 from django.test import TestCase
 
-from dcim.models import Site, DeviceRole, DeviceType, Manufacturer, Device
+from dcim.models import Site, DeviceRole, DeviceType, Manufacturer, Device, Interface
+from ipam.models import IPAddress
 
 from netbox_onboarding.models import OnboardingTask
 from netbox_onboarding.models import OnboardingDevice
@@ -31,8 +32,16 @@ class OnboardingDeviceModelTestCase(TestCase):
         device_type = DeviceType.objects.create(slug="srx3600", model="SRX3600", manufacturer=manufacturer)
 
         self.device = Device.objects.create(
-            device_type=device_type, name="device1", device_role=device_role, site=self.site
+            device_type=device_type, name="device1", device_role=device_role, site=self.site,
         )
+
+        intf = Interface.objects.create(name="test_intf", device=self.device)
+
+        primary_ip = IPAddress.objects.create(address="10.10.10.10/32")
+        intf.ip_addresses.add(primary_ip)
+
+        self.device.primary_ip4 = primary_ip
+        self.device.save()
 
         self.succeeded_task1 = OnboardingTask.objects.create(
             ip_address="10.10.10.10",
@@ -70,12 +79,12 @@ class OnboardingDeviceModelTestCase(TestCase):
     def test_last_check_attempt_date(self):
         """Verify OnboardingDevice last attempt."""
         onboarding_device = OnboardingDevice.objects.get(device=self.device)
-        self.assertEqual(onboarding_device.last_check_attempt_date, self.failed_task2.created_on)
+        self.assertEqual(onboarding_device.last_check_attempt_date, self.failed_task2.created)
 
     def test_last_check_successful_date(self):
         """Verify OnboardingDevice last success."""
         onboarding_device = OnboardingDevice.objects.get(device=self.device)
-        self.assertEqual(onboarding_device.last_check_successful_date, self.succeeded_task2.created_on)
+        self.assertEqual(onboarding_device.last_check_successful_date, self.succeeded_task2.created)
 
     def test_status(self):
         """Verify OnboardingDevice status."""
