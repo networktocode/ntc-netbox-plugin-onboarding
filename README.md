@@ -26,8 +26,10 @@ pip install ntc-netbox-plugin-onboarding
 systemctl restart netbox netbox-rq
 ```
 
-> The plugin is compatible with NetBox 2.8.1 and higher
- 
+> The ntc-netbox-plugin-onboarding v1.3 is compatible with NetBox 2.8
+
+> The ntc-netbox-plugin-onboarding v2 is compatible with NetBox 2.8 and NetBox 2.9
+
 To ensure NetBox Onboarding plugin is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the NetBox root directory (alongside `requirements.txt`) and list the `ntc-netbox-plugin-onboarding` package:
 
 ```no-highlight
@@ -67,7 +69,13 @@ The plugin behavior can be controlled with the following list of settings
 - `platform_map` (dictionary), mapping of an **auto-detected** Netmiko platform to the **NetBox slug** name of your Platform. The dictionary should be in the format:
     ```python
     {
-      <Netmiko Platform>: <NetBox Slug> 
+      <Netmiko Platform>: <NetBox Slug>
+    }
+    ```
+- `onboarding_extensions_map` (dictionary), mapping of a NAPALM driver name to the loadable Python module used as an onboarding extension. The dictionary should be in the format:
+    ```python
+    {
+      <Napalm Driver Name>: <Loadable Python Module>
     }
     ```
 
@@ -75,15 +83,15 @@ The plugin behavior can be controlled with the following list of settings
 
 ### Preparation
 
-To work properly the plugin needs to know the Site, Platform, Device Type, Device Role of each
-device as well as its primary IP address or DNS Name. It's recommended to create these objects in
-NetBox ahead of time and to provide them when you want to start the onboarding process.
+To properly onboard a device, the plugin needs to only know the Site as well as device's primary IP address or DNS Name.
 
 > For DNS Name Resolution to work, the instance of NetBox must be able to resolve the name of the
 > device to IP address.
 
+Providing other attributes (`Platform`, `Device Type`, `Device Role`) is optional - if any of these attributes is provided, plugin will use provided value for the onboarded device.
 If `Platform`, `Device Type` and/or `Device Role` are not provided, the plugin will try to identify these information automatically and, based on the settings, it can create them in NetBox as needed.
-> If the Platform is provided, it must contains a valid Napalm driver available to the worker in Python
+> If the Platform is provided, it must point to an existing NetBox Platform. NAPALM driver of this platform will be used only if it is defined for the platform in NetBox.
+> To use a preferred NAPALM driver, either define it in NetBox per platform or in the plugins settings under `platform_map`
 
 ### Onboard a new device
 
