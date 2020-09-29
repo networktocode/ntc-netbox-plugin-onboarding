@@ -66,6 +66,8 @@ The plugin behavior can be controlled with the following list of settings
 - `default_device_role_color` string (default FF0000), color assigned to the device role if it needs to be created.
 - `default_management_interface` string (default "PLACEHOLDER"), name of the management interface that will be created, if one can't be identified on the device.
 - `default_management_prefix_length` integer ( default 0), length of the prefix that will be used for the management IP address, if the IP can't be found.
+- `skip_device_type_on_update` boolean (default False), If True, an existing NetBox device will not get its device type updated. If False, device type will be updated with one discovered on a device.
+- `skip_manufacturer_on_update` boolean (default False), If True, an existing NetBox device will not get its manufacturer updated. If False, manufacturer will be updated with one discovered on a device.
 - `platform_map` (dictionary), mapping of an **auto-detected** Netmiko platform to the **NetBox slug** name of your Platform. The dictionary should be in the format:
     ```python
     {
