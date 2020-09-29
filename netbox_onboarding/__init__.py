@@ -39,6 +39,8 @@ class OnboardingConfig(PluginConfig):
         "default_management_prefix_length": 0,
         "default_device_status": "active",
         "create_management_interface_if_missing": True,
+        "skip_device_type_on_update": False,
+        "skip_manufacturer_on_update": False,
         "platform_map": {},
         "onboarding_extensions_map": {"ios": "netbox_onboarding.onboarding_extensions.ios",},
     }
