@@ -97,8 +97,29 @@ class NetboxKeeper:
         self.nb_platform = None
 
         self.device = None
+        self.onboarded_device = None
         self.nb_mgmt_ifname = None
         self.nb_primary_ip = None
+
+    def ensure_onboarded_device(self):
+        """Lookup if the device already exists in the NetBox.
+
+        Lookup is performed by querying for the IP address of the onboarded device.
+        If the device with a given IP is already in NetBox, its attributes including name could be updated
+        """
+        try:
+            if self.netdev_mgmt_ip_address:
+                self.onboarded_device = Device.objects.get(primary_ip4__address__net_host=self.netdev_mgmt_ip_address)
+        except Device.DoesNotExist:
+            logger.info(
+                "Could not find existing NetBox device for requested primary IP address (%s)",
+                self.netdev_mgmt_ip_address,
+            )
+        except Device.MultipleObjectsReturned:
+            raise OnboardException(
+                reason="fail-general",
+                message=f"ERROR multiple devices using same IP in NetBox: {self.netdev_mgmt_ip_address}",
+            )
 
     def ensure_device_site(self):
         """Ensure device's site."""
@@ -108,9 +129,17 @@ class NetboxKeeper:
             raise OnboardException(reason="fail-config", message=f"Site not found: {self.netdev_nb_site_slug}")
 
     def ensure_device_manufacturer(
-        self, create_manufacturer=PLUGIN_SETTINGS["create_manufacturer_if_missing"],
+        self,
+        create_manufacturer=PLUGIN_SETTINGS["create_manufacturer_if_missing"],
+        skip_manufacturer_on_update=PLUGIN_SETTINGS["skip_manufacturer_on_update"],
     ):
         """Ensure device's manufacturer."""
+        # Support to skip manufacturer updates for existing devices
+        if self.onboarded_device and skip_manufacturer_on_update:
+            self.nb_manufacturer = self.onboarded_device.device_type.manufacturer
+
+            return
+
         # First ensure that the vendor, as extracted from the network device exists
         # in NetBox.  We need the ID for this vendor when ensuring the DeviceType
         # instance.
@@ -128,13 +157,15 @@ class NetboxKeeper:
                 )
 
     def ensure_device_type(
-        self, create_device_type=PLUGIN_SETTINGS["create_device_type_if_missing"],
+        self,
+        create_device_type=PLUGIN_SETTINGS["create_device_type_if_missing"],
+        skip_device_type_on_update=PLUGIN_SETTINGS["skip_device_type_on_update"],
     ):
         """Ensure the Device Type (slug) exists in NetBox associated to the netdev "model" and "vendor" (manufacturer).
 
         Args:
-          #create_manufacturer (bool) :Flag to indicate if we need to create the manufacturer, if not already present
           create_device_type (bool): Flag to indicate if we need to create the device_type, if not already present
+          skip_device_type_on_update (bool): Flag to indicate if we skip device type updates for existing devices
         Raises:
           OnboardException('fail-config'):
             When the device vendor value does not exist as a Manufacturer in
@@ -145,6 +176,12 @@ class NetboxKeeper:
             manufacturer.  This should *not* happen, but guard-rail checking
             regardless in case two vendors have the same model name.
         """
+        # Support to skip device type updates for existing devices
+        if self.onboarded_device and skip_device_type_on_update:
+            self.nb_device_type = self.onboarded_device.device_type
+
+            return
+
         # Now see if the device type (slug) already exists,
         #  if so check to make sure that it is not assigned as a different manufacturer
         # if it doesn't exist, create it if the flag 'create_device_type_if_missing' is defined
@@ -268,38 +305,16 @@ class NetboxKeeper:
         Args:
           default_status (str) : status assigned to a new device by default.
         """
-        # Lookup if the device already exists in the NetBox
-        # First update and creation lookup is by checking the IP address
-        # of the onboarded device.
-        #
-        # If the device with a given IP is already in NetBox,
-        # any attributes including name could be updated
-        onboarded_device = None
-
-        try:
-            if self.netdev_mgmt_ip_address:
-                onboarded_device = Device.objects.get(primary_ip4__address__net_host=self.netdev_mgmt_ip_address)
-        except Device.DoesNotExist:
-            logger.info(
-                "Could not find existing NetBox device for requested primary IP address (%s)",
-                self.netdev_mgmt_ip_address,
-            )
-        except Device.MultipleObjectsReturned:
-            raise OnboardException(
-                reason="fail-general",
-                message=f"ERROR multiple devices using same IP in NetBox: {self.netdev_mgmt_ip_address}",
-            )
-
-        if onboarded_device:
+        if self.onboarded_device:
             # Construct lookup arguments if onboarded device already exists in NetBox
 
             logger.info(
                 "Found existing NetBox device (%s) for requested primary IP address (%s)",
-                onboarded_device.name,
+                self.onboarded_device.name,
                 self.netdev_mgmt_ip_address,
             )
             lookup_args = {
-                "pk": onboarded_device.pk,
+                "pk": self.onboarded_device.pk,
                 "defaults": dict(
                     name=self.netdev_hostname,
                     device_type=self.nb_device_type,
@@ -362,6 +377,7 @@ class NetboxKeeper:
 
     def ensure_device(self):
         """Ensure that the device represented by the DevNetKeeper exists in the NetBox system."""
+        self.ensure_onboarded_device()
         self.ensure_device_site()
         self.ensure_device_manufacturer()
         self.ensure_device_type()
