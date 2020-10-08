@@ -15,6 +15,7 @@ limitations under the License.
 import logging
 import re
 
+from django.db.models import Q
 from django.conf import settings
 from django.utils.text import slugify
 from dcim.models import Manufacturer, Device, Interface, DeviceType, DeviceRole
@@ -29,6 +30,22 @@ logger = logging.getLogger("rq.worker")
 
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
+
+def object_match(obj, search_array):
+    """Used to search models for multiple criteria."""
+    try:
+        result = obj.objects.get(**search_array[0])
+        return result
+    except obj.DoesNotExist:
+        if PLUGIN_SETTINGS['object_match_strategy'] == "loose":
+            for search in range(0, len(search_array)):
+                try:
+                    result = obj.objects.get(**search_array[search])
+                    return result
+                except obj.DoesNotExist:
+                    pass
+        raise obj.DoesNotExist
+                
 
 class NetboxKeeper:
     """Used to manage the information relating to the network device within the NetBox server."""
@@ -118,7 +135,11 @@ class NetboxKeeper:
         nb_manufacturer_slug = slugify(self.netdev_vendor)
 
         try:
-            self.nb_manufacturer = Manufacturer.objects.get(slug=nb_manufacturer_slug)
+            search_array = [
+                {"slug__iexact": nb_manufacturer_slug},
+                {"slug": nb_manufacturer_slug}
+            ]
+            self.nb_manufacturer = object_match(Manufacturer, search_array)
         except Manufacturer.DoesNotExist:
             if create_manufacturer:
                 self.nb_manufacturer = Manufacturer.objects.create(name=self.netdev_vendor, slug=nb_manufacturer_slug)
@@ -164,7 +185,14 @@ class NetboxKeeper:
         nb_device_type_slug = slugify(nb_device_type_text)
 
         try:
-            self.nb_device_type = DeviceType.objects.get(slug=nb_device_type_slug)
+            search_array = [
+                {"slug": nb_device_type_slug},
+                {"slug__iexact": nb_device_type_slug},
+                {"model__iexact": self.netdev_model},
+                {"part_number__iexact": self.netdev_model}
+            ]
+
+            self.nb_device_type = object_match(DeviceType, search_array)
 
             if self.nb_device_type.manufacturer.id != self.nb_manufacturer.id:
                 raise OnboardException(

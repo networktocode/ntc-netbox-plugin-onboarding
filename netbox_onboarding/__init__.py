@@ -41,6 +41,7 @@ class OnboardingConfig(PluginConfig):
         "create_management_interface_if_missing": True,
         "platform_map": {},
         "onboarding_extensions_map": {"ios": "netbox_onboarding.onboarding_extensions.ios",},
+        "object_match_strategy": "loose"
     }
     caching_config = {}
 
