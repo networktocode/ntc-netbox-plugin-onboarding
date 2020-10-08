@@ -36,16 +36,18 @@ def object_match(obj, search_array):
     try:
         result = obj.objects.get(**search_array[0])
         return result
-    except obj.DoesNotExist:
+    except obj.DoesNotExist as error:
         if PLUGIN_SETTINGS['object_match_strategy'] == "loose":
-            for search in range(1, len(search_array)):
+            for search_array_element in search_array[1:]:
                 try:
-                    result = obj.objects.get(**search_array[search])
+                    result = obj.objects.get(**search_array_element)
                     return result
                 except obj.DoesNotExist:
                     pass
-        raise obj.DoesNotExist
-                
+                except obj.Multiple:
+                    raise OnboardException(reason="fail-general", message=f"ERROR multiple objects found")
+        raise
+
 
 class NetboxKeeper:
     """Used to manage the information relating to the network device within the NetBox server."""
