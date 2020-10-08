@@ -30,6 +30,43 @@ logger = logging.getLogger("rq.worker")
 PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
+def object_match(obj, search_array):
+    """Used to search models for multiple criteria.
+
+    Inputs:
+        obj:            The model used for searching.
+        search_array:   Nested dictionaries used to search models. First criteria will be used
+                        for strict searching. Loose searching will loop through the search_array
+                        until it finds a match. Example below.
+                        [
+                            {"slug__iexact": 'switch1'},
+                            {"model__iexact": 'Cisco'}
+                        ]
+    """
+    try:
+        result = obj.objects.get(**search_array[0])
+        return result
+    except obj.DoesNotExist:
+        if PLUGIN_SETTINGS["object_match_strategy"] == "loose":
+            for search_array_element in search_array[1:]:
+                try:
+                    result = obj.objects.get(**search_array_element)
+                    return result
+                except obj.DoesNotExist:
+                    pass
+                except obj.MultipleObjectsReturned:
+                    raise OnboardException(
+                        reason="fail-general",
+                        message=f"ERROR multiple objects found in {str(obj)} searching on {str(search_array_element)})",
+                    )
+        raise
+    except obj.MultipleObjectsReturned:
+        raise OnboardException(
+            reason="fail-general",
+            message=f"ERROR multiple objects found in {str(obj)} searching on {str(search_array_element)})",
+        )
+
+
 class NetboxKeeper:
     """Used to manage the information relating to the network device within the NetBox server."""
 
@@ -147,7 +184,8 @@ class NetboxKeeper:
         nb_manufacturer_slug = slugify(self.netdev_vendor)
 
         try:
-            self.nb_manufacturer = Manufacturer.objects.get(slug=nb_manufacturer_slug)
+            search_array = [{"slug__iexact": nb_manufacturer_slug}]
+            self.nb_manufacturer = object_match(Manufacturer, search_array)
         except Manufacturer.DoesNotExist:
             if create_manufacturer:
                 self.nb_manufacturer = Manufacturer.objects.create(name=self.netdev_vendor, slug=nb_manufacturer_slug)
@@ -201,7 +239,13 @@ class NetboxKeeper:
         nb_device_type_slug = slugify(nb_device_type_text)
 
         try:
-            self.nb_device_type = DeviceType.objects.get(slug=nb_device_type_slug)
+            search_array = [
+                {"slug__iexact": nb_device_type_slug},
+                {"model__iexact": self.netdev_model},
+                {"part_number__iexact": self.netdev_model},
+            ]
+
+            self.nb_device_type = object_match(DeviceType, search_array)
 
             if self.nb_device_type.manufacturer.id != self.nb_manufacturer.id:
                 raise OnboardException(

@@ -43,6 +43,7 @@ class OnboardingConfig(PluginConfig):
         "skip_manufacturer_on_update": False,
         "platform_map": {},
         "onboarding_extensions_map": {"ios": "netbox_onboarding.onboarding_extensions.ios",},
+        "object_match_strategy": "loose",
     }
     caching_config = {}
 
