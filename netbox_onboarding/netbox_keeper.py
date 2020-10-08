@@ -38,7 +38,7 @@ def object_match(obj, search_array):
         return result
     except obj.DoesNotExist:
         if PLUGIN_SETTINGS['object_match_strategy'] == "loose":
-            for search in range(0, len(search_array)):
+            for search in range(1, len(search_array)):
                 try:
                     result = obj.objects.get(**search_array[search])
                     return result
