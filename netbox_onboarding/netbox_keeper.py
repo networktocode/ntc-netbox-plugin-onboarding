@@ -15,7 +15,6 @@ limitations under the License.
 import logging
 import re
 
-from django.db.models import Q
 from django.conf import settings
 from django.utils.text import slugify
 from dcim.models import Manufacturer, Device, Interface, DeviceType, DeviceRole
@@ -32,7 +31,17 @@ PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 
 def object_match(obj, search_array):
-    """Used to search models for multiple criteria."""
+    """Used to search models for multiple criteria.
+        Inputs:
+            obj:            The model used for searching.
+            search_array:   Nested dictionaries used to search models. First criteria will be used
+                            for strict searching. Loose searching will loop through the search_array
+                            until it finds a match. Example below.
+                            [
+                                {"slug__iexact": 'switch1'},
+                                {"model__iexact": 'Cisco'}   
+                            ]
+    """
     try:
         result = obj.objects.get(**search_array[0])
         return result
@@ -44,8 +53,8 @@ def object_match(obj, search_array):
                     return result
                 except obj.DoesNotExist:
                     pass
-                except obj.Multiple:
-                    raise OnboardException(reason="fail-general", message=f"ERROR multiple objects found")
+                except obj.MultipleObjectsReturned:
+                    raise OnboardException(reason="fail-general", message=f"ERROR multiple objects found in {str(obj)} searching on {str(search_array_element)})")
         raise
 
 
@@ -138,8 +147,7 @@ class NetboxKeeper:
 
         try:
             search_array = [
-                {"slug__iexact": nb_manufacturer_slug},
-                {"slug": nb_manufacturer_slug}
+                {"slug__iexact": nb_manufacturer_slug}
             ]
             self.nb_manufacturer = object_match(Manufacturer, search_array)
         except Manufacturer.DoesNotExist:
@@ -188,7 +196,6 @@ class NetboxKeeper:
 
         try:
             search_array = [
-                {"slug": nb_device_type_slug},
                 {"slug__iexact": nb_device_type_slug},
                 {"model__iexact": self.netdev_model},
                 {"part_number__iexact": self.netdev_model}
