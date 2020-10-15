@@ -46,7 +46,7 @@ def object_match(obj, search_array):
         result = obj.objects.get(**search_array[0])
         return result
     except obj.DoesNotExist as error:
-        if PLUGIN_SETTINGS['object_match_strategy'] == "loose":
+        if PLUGIN_SETTINGS["object_match_strategy"] == "loose":
             for search_array_element in search_array[1:]:
                 try:
                     result = obj.objects.get(**search_array_element)
@@ -54,7 +54,10 @@ def object_match(obj, search_array):
                 except obj.DoesNotExist:
                     pass
                 except obj.MultipleObjectsReturned:
-                    raise OnboardException(reason="fail-general", message=f"ERROR multiple objects found in {str(obj)} searching on {str(search_array_element)})")
+                    raise OnboardException(
+                        reason="fail-general",
+                        message=f"ERROR multiple objects found in {str(obj)} searching on {str(search_array_element)})",
+                    )
         raise
 
 
@@ -146,9 +149,7 @@ class NetboxKeeper:
         nb_manufacturer_slug = slugify(self.netdev_vendor)
 
         try:
-            search_array = [
-                {"slug__iexact": nb_manufacturer_slug}
-            ]
+            search_array = [{"slug__iexact": nb_manufacturer_slug}]
             self.nb_manufacturer = object_match(Manufacturer, search_array)
         except Manufacturer.DoesNotExist:
             if create_manufacturer:
@@ -198,7 +199,7 @@ class NetboxKeeper:
             search_array = [
                 {"slug__iexact": nb_device_type_slug},
                 {"model__iexact": self.netdev_model},
-                {"part_number__iexact": self.netdev_model}
+                {"part_number__iexact": self.netdev_model},
             ]
 
             self.nb_device_type = object_match(DeviceType, search_array)
