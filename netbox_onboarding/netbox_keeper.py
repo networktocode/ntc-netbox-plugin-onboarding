@@ -32,20 +32,21 @@ PLUGIN_SETTINGS = settings.PLUGINS_CONFIG["netbox_onboarding"]
 
 def object_match(obj, search_array):
     """Used to search models for multiple criteria.
-        Inputs:
-            obj:            The model used for searching.
-            search_array:   Nested dictionaries used to search models. First criteria will be used
-                            for strict searching. Loose searching will loop through the search_array
-                            until it finds a match. Example below.
-                            [
-                                {"slug__iexact": 'switch1'},
-                                {"model__iexact": 'Cisco'}   
-                            ]
+
+    Inputs:
+        obj:            The model used for searching.
+        search_array:   Nested dictionaries used to search models. First criteria will be used
+                        for strict searching. Loose searching will loop through the search_array
+                        until it finds a match. Example below.
+                        [
+                            {"slug__iexact": 'switch1'},
+                            {"model__iexact": 'Cisco'}
+                        ]
     """
     try:
         result = obj.objects.get(**search_array[0])
         return result
-    except obj.DoesNotExist as error:
+    except obj.DoesNotExist:
         if PLUGIN_SETTINGS["object_match_strategy"] == "loose":
             for search_array_element in search_array[1:]:
                 try:
