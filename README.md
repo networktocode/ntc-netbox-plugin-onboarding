@@ -59,6 +59,10 @@ The plugin behavior can be controlled with the following list of settings
       <Netmiko Platform>: <NetBox Slug> 
     }
     ```
+- `object_match_strategy` (string), defines the method for searching models. There are
+currently two strategies, strict and loose. Strict has to be a direct match, normally 
+using a slug. Loose allows a range of search criteria to match a single object. If multiple
+objects are returned an error is raised. 
 
 ## Usage
 

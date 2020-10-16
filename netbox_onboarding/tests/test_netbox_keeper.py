@@ -31,8 +31,9 @@ class NetboxKeeperTestCase(TestCase):
         """Create a superuser and token for API calls."""
         self.site1 = Site.objects.create(name="USWEST", slug="uswest")
 
-    def test_ensure_device_manufacturer_missing(self):
+    def test_ensure_device_manufacturer_strict_missing(self):
         """Verify ensure_device_manufacturer function when Manufacturer object is not present."""
+        PLUGIN_SETTINGS["object_match_strategy"] = "strict"
         onboarding_kwargs = {
             "netdev_hostname": "device1",
             "netdev_nb_role_slug": PLUGIN_SETTINGS["default_device_role"],
@@ -52,8 +53,31 @@ class NetboxKeeperTestCase(TestCase):
         self.assertIsInstance(nbk.nb_manufacturer, Manufacturer)
         self.assertEqual(nbk.nb_manufacturer.slug, slugify(onboarding_kwargs["netdev_vendor"]))
 
-    def test_ensure_device_type_missing(self):
+    def test_ensure_device_manufacturer_loose_missing(self):
+        """Verify ensure_device_manufacturer function when Manufacturer object is not present."""
+        PLUGIN_SETTINGS["object_match_strategy"] = "loose"
+        onboarding_kwargs = {
+            "netdev_hostname": "device1",
+            "netdev_nb_role_slug": PLUGIN_SETTINGS["default_device_role"],
+            "netdev_vendor": "Cisco",
+            "netdev_model": "CSR1000v",
+            "netdev_nb_site_slug": self.site1.slug,
+        }
+
+        nbk = NetboxKeeper(**onboarding_kwargs)
+
+        with self.assertRaises(OnboardException) as exc_info:
+            nbk.ensure_device_manufacturer(create_manufacturer=False)
+            self.assertEqual(exc_info.exception.message, "ERROR manufacturer not found: Cisco")
+            self.assertEqual(exc_info.exception.reason, "fail-config")
+
+        nbk.ensure_device_manufacturer(create_manufacturer=True)
+        self.assertIsInstance(nbk.nb_manufacturer, Manufacturer)
+        self.assertEqual(nbk.nb_manufacturer.slug, slugify(onboarding_kwargs["netdev_vendor"]))
+
+    def test_ensure_device_type_strict_missing(self):
         """Verify ensure_device_type function when DeviceType object is not present."""
+        PLUGIN_SETTINGS["object_match_strategy"] = "strict"
         onboarding_kwargs = {
             "netdev_hostname": "device1",
             "netdev_nb_role_slug": PLUGIN_SETTINGS["default_device_role"],
@@ -74,8 +98,53 @@ class NetboxKeeperTestCase(TestCase):
         self.assertIsInstance(nbk.nb_device_type, DeviceType)
         self.assertEqual(nbk.nb_device_type.slug, slugify(onboarding_kwargs["netdev_model"]))
 
-    def test_ensure_device_type_present(self):
+    def test_ensure_device_type_loose_missing(self):
+        """Verify ensure_device_type function when DeviceType object is not present."""
+        PLUGIN_SETTINGS["object_match_strategy"] = "loose"
+        onboarding_kwargs = {
+            "netdev_hostname": "device1",
+            "netdev_nb_role_slug": PLUGIN_SETTINGS["default_device_role"],
+            "netdev_vendor": "Cisco",
+            "netdev_model": "CSR1000v",
+            "netdev_nb_site_slug": self.site1.slug,
+        }
+
+        nbk = NetboxKeeper(**onboarding_kwargs)
+        nbk.nb_manufacturer = Manufacturer.objects.create(name="Cisco", slug="cisco")
+
+        with self.assertRaises(OnboardException) as exc_info:
+            nbk.ensure_device_type(create_device_type=False)
+            self.assertEqual(exc_info.exception.message, "ERROR device type not found: CSR1000v")
+            self.assertEqual(exc_info.exception.reason, "fail-config")
+
+        nbk.ensure_device_type(create_device_type=True)
+        self.assertIsInstance(nbk.nb_device_type, DeviceType)
+        self.assertEqual(nbk.nb_device_type.slug, slugify(onboarding_kwargs["netdev_model"]))
+
+    def test_ensure_device_type_strict_present(self):
         """Verify ensure_device_type function when DeviceType object is already present."""
+        PLUGIN_SETTINGS["object_match_strategy"] = "strict"
+        manufacturer = Manufacturer.objects.create(name="Juniper", slug="juniper")
+
+        device_type = DeviceType.objects.create(slug="srx3600", model="SRX3600", manufacturer=manufacturer)
+
+        onboarding_kwargs = {
+            "netdev_hostname": "device2",
+            "netdev_nb_role_slug": PLUGIN_SETTINGS["default_device_role"],
+            "netdev_vendor": "Juniper",
+            "netdev_nb_device_type_slug": device_type.slug,
+            "netdev_nb_site_slug": self.site1.slug,
+        }
+
+        nbk = NetboxKeeper(**onboarding_kwargs)
+        nbk.nb_manufacturer = manufacturer
+
+        nbk.ensure_device_type(create_device_type=False)
+        self.assertEqual(nbk.nb_device_type, device_type)
+
+    def test_ensure_device_type_loose_present(self):
+        """Verify ensure_device_type function when DeviceType object is already present."""
+        PLUGIN_SETTINGS["object_match_strategy"] = "loose"
         manufacturer = Manufacturer.objects.create(name="Juniper", slug="juniper")
 
         device_type = DeviceType.objects.create(slug="srx3600", model="SRX3600", manufacturer=manufacturer)
