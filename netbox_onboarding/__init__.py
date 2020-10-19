@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__version__ = "1.3.0"
+__version__ = "2.0.0"
 
 from extras.plugins import PluginConfig
 
@@ -39,7 +39,11 @@ class OnboardingConfig(PluginConfig):
         "default_management_prefix_length": 0,
         "default_device_status": "active",
         "create_management_interface_if_missing": True,
+        "skip_device_type_on_update": False,
+        "skip_manufacturer_on_update": False,
         "platform_map": {},
+        "onboarding_extensions_map": {"ios": "netbox_onboarding.onboarding_extensions.ios",},
+        "object_match_strategy": "loose",
     }
     caching_config = {}
 
