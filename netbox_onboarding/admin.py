@@ -32,5 +32,5 @@ class OnboardingTaskAdmin(admin.ModelAdmin):
         "failed_reason",
         "port",
         "timeout",
-        "created_on",
+        "created",
     )

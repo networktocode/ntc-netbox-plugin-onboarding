@@ -1,0 +1,31 @@
+{% block content %}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <strong>Device Onboarding</strong>
+    </div>
+    <table class="table table-hover panel-body">
+        <tbody>
+            <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Date of last success</th>
+                <th>Latest Task</th>
+            </tr>
+            <tr>
+                <td>
+                    {{ last_check_attempt_date }}
+                </td>
+                <td>
+                    {{ status }}
+                </td>
+                <td>
+                    {{ last_check_successful_date }}
+                </td>
+                <td>
+                    {{ last_ot.pk }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

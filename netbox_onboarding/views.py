@@ -12,22 +12,85 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from django.contrib.auth.mixins import PermissionRequiredMixin
+
+from django.shortcuts import get_object_or_404, render
+from django.views.generic import View
+
 from utilities.views import BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
+
+from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29
 
 from .filters import OnboardingTaskFilter
 from .forms import OnboardingTaskForm, OnboardingTaskFilterForm, OnboardingTaskFeedCSVForm
 from .models import OnboardingTask
 from .tables import OnboardingTaskTable, OnboardingTaskFeedBulkTable
 
-log = logging.getLogger("rq.worker")
-log.setLevel(logging.DEBUG)
+logger = logging.getLogger("rq.worker")
 
 
-class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
+if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
+    from django.contrib.auth.mixins import PermissionRequiredMixin  # pylint: disable=ungrouped-imports
+
+    class ReleaseMixinOnboardingTaskView(PermissionRequiredMixin, View):
+        """Release Mixin View for presenting a single OnboardingTask."""
+
+        permission_required = "netbox_onboarding.view_onboardingtask"
+
+    class ReleaseMixinOnboardingTaskListView(PermissionRequiredMixin):
+        """Release Mixin View for listing all extant OnboardingTasks."""
+
+        permission_required = "netbox_onboarding.view_onboardingtask"
+
+    class ReleaseMixinOnboardingTaskCreateView(PermissionRequiredMixin):
+        """Release Mixin View for creating a new OnboardingTask."""
+
+        permission_required = "netbox_onboarding.add_onboardingtask"
+
+    class ReleaseMixinOnboardingTaskBulkDeleteView(PermissionRequiredMixin):
+        """Release Mixin View for deleting one or more OnboardingTasks."""
+
+        permission_required = "netbox_onboarding.delete_onboardingtask"
+
+    class ReleaseMixinOnboardingTaskFeedBulkImportView(PermissionRequiredMixin):
+        """Release Mixin View for bulk-importing a CSV file to create OnboardingTasks."""
+
+        permission_required = "netbox_onboarding.add_onboardingtask"
+
+
+else:
+    from utilities.views import ObjectView  # pylint: disable=ungrouped-imports, no-name-in-module
+
+    class ReleaseMixinOnboardingTaskView(ObjectView):
+        """Release Mixin View for presenting a single OnboardingTask."""
+
+    class ReleaseMixinOnboardingTaskListView:
+        """Release Mixin View for listing all extant OnboardingTasks."""
+
+    class ReleaseMixinOnboardingTaskCreateView:
+        """Release Mixin View for creating a new OnboardingTask."""
+
+    class ReleaseMixinOnboardingTaskBulkDeleteView:
+        """Release Mixin View for deleting one or more OnboardingTasks."""
+
+    class ReleaseMixinOnboardingTaskFeedBulkImportView:
+        """Release Mixin View for bulk-importing a CSV file to create OnboardingTasks."""
+
+
+class OnboardingTaskView(ReleaseMixinOnboardingTaskView):
+    """View for presenting a single OnboardingTask."""
+
+    queryset = OnboardingTask.objects.all()
+
+    def get(self, request, pk):  # pylint: disable=invalid-name, missing-function-docstring
+        """Get request."""
+        onboardingtask = get_object_or_404(self.queryset, pk=pk)
+
+        return render(request, "netbox_onboarding/onboardingtask.html", {"onboardingtask": onboardingtask,})
+
+
+class OnboardingTaskListView(ReleaseMixinOnboardingTaskListView, ObjectListView):
     """View for listing all extant OnboardingTasks."""
 
-    permission_required = "netbox_onboarding.view_onboardingtask"
     queryset = OnboardingTask.objects.all().order_by("-id")
     filterset = OnboardingTaskFilter
     filterset_form = OnboardingTaskFilterForm
@@ -35,30 +98,28 @@ class OnboardingTaskListView(PermissionRequiredMixin, ObjectListView):
     template_name = "netbox_onboarding/onboarding_tasks_list.html"
 
 
-class OnboardingTaskCreateView(PermissionRequiredMixin, ObjectEditView):
+class OnboardingTaskCreateView(ReleaseMixinOnboardingTaskCreateView, ObjectEditView):
     """View for creating a new OnboardingTask."""
 
-    permission_required = "netbox_onboarding.add_onboardingtask"
     model = OnboardingTask
     queryset = OnboardingTask.objects.all()
     model_form = OnboardingTaskForm
     template_name = "netbox_onboarding/onboarding_task_edit.html"
-    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
+    default_return_url = "plugins:netbox_onboarding:onboardingtask_list"
 
 
-class OnboardingTaskBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
+class OnboardingTaskBulkDeleteView(ReleaseMixinOnboardingTaskBulkDeleteView, BulkDeleteView):
     """View for deleting one or more OnboardingTasks."""
 
-    permission_required = "netbox_onboarding.delete_onboardingtask"
     queryset = OnboardingTask.objects.filter()  # TODO: can we exclude currently-running tasks?
     table = OnboardingTaskTable
-    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
+    default_return_url = "plugins:netbox_onboarding:onboardingtask_list"
 
 
-class OnboardingTaskFeedBulkImportView(PermissionRequiredMixin, BulkImportView):
+class OnboardingTaskFeedBulkImportView(ReleaseMixinOnboardingTaskFeedBulkImportView, BulkImportView):
     """View for bulk-importing a CSV file to create OnboardingTasks."""
 
-    permission_required = "netbox_onboarding.add_onboardingtask"
+    queryset = OnboardingTask.objects.all()
     model_form = OnboardingTaskFeedCSVForm
     table = OnboardingTaskFeedBulkTable
-    default_return_url = "plugins:netbox_onboarding:onboarding_task_list"
+    default_return_url = "plugins:netbox_onboarding:onboardingtask_list"
