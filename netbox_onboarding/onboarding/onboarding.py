@@ -21,6 +21,7 @@ class Onboarding:
     def __init__(self):
         """Init the class."""
         self.created_device = None
+        self.credentials = None
 
     def run(self, onboarding_kwargs):
         """Implement run method."""
