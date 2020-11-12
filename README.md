@@ -87,9 +87,7 @@ objects are returned an error is raised.
 
 ## Upgrades
 
-When a new release comes out it is best practice to initiated a migration of the database to account
-for any new migrations that may be needed to the DB. Execute a `python manage.py migrate`from the
-NetBox install `netbox/` directory.  
+When a new release comes out it may be necessary to run a migration of the database to account for any changes in the data models used by this plugin. Execute the command `python3 manage.py migrate`from the NetBox install `netbox/` directory after updating the package.
 
 ## Usage
 
