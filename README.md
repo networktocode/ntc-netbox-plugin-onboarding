@@ -85,6 +85,10 @@ currently two strategies, strict and loose. Strict has to be a direct match, nor
 using a slug. Loose allows a range of search criteria to match a single object. If multiple
 objects are returned an error is raised. 
 
+## Upgrades
+
+When a new release comes out it may be necessary to run a migration of the database to account for any changes in the data models used by this plugin. Execute the command `python3 manage.py migrate`from the NetBox install `netbox/` directory after updating the package.
+
 ## Usage
 
 ### Preparation
