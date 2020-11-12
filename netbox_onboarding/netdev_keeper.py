@@ -104,6 +104,9 @@ class NetdevKeeper:
         self.onboarding_class = StandaloneOnboarding
         self.driver_addon_result = None
 
+        # Enable loading driver extensions
+        self.load_driver_extension = True
+
     def check_reachability(self):
         """Ensure that the device at the mgmt-ipaddr provided is reachable.
 
@@ -248,7 +251,7 @@ class NetdevKeeper:
 
             module_name = PLUGIN_SETTINGS["onboarding_extensions_map"].get(self.napalm_driver)
 
-            if module_name:
+            if module_name and self.load_driver_extension:
                 try:
                     module = importlib.import_module(module_name)
                     driver_addon_class = module.OnboardingDriverExtensions(napalm_device=napalm_device)
