@@ -12,6 +12,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import json
+
 from django.conf import settings
 
 from .netdev_keeper import NetdevKeeper
@@ -33,6 +35,16 @@ class OnboardingTaskManager:
             return self.ot.platform.napalm_driver
 
         return None
+
+    @property
+    def optional_args(self):
+        """Return platform optional args."""
+        if self.ot.platform and self.ot.platform.napalm_args:
+            napalm_args = json.loads(self.ot.platform.napalm_args)
+
+            return napalm_args
+
+        return {}
 
     @property
     def ip_address(self):
@@ -75,12 +87,12 @@ class OnboardingManager:
 
     def __init__(self, ot, username, password, secret):
         """Inits class."""
-        self.username = username
-        self.password = password
-        self.secret = secret
-
         # Create instance of Onboarding Task Manager class:
         otm = OnboardingTaskManager(ot)
+
+        self.username = username or settings.NAPALM_USERNAME
+        self.password = password or settings.NAPALM_PASSWORD
+        self.secret = secret or otm.optional_args.get("secret", None) or settings.NAPALM_ARGS.get("secret", None)
 
         netdev = NetdevKeeper(
             hostname=otm.ip_address,
@@ -90,6 +102,7 @@ class OnboardingManager:
             password=self.password,
             secret=self.secret,
             napalm_driver=otm.napalm_driver,
+            optional_args=otm.optional_args or settings.NAPALM_ARGS,
         )
 
         netdev.get_onboarding_facts()
@@ -116,6 +129,7 @@ class OnboardingManager:
         }
 
         onboarding_cls = netdev_dict["onboarding_class"]()
+        onboarding_cls.credentials = {"username": self.username, "password": self.password, "secret": self.secret}
         onboarding_cls.run(onboarding_kwargs=onboarding_kwargs)
 
         self.created_device = onboarding_cls.created_device
