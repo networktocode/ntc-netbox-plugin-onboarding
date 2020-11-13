@@ -16,11 +16,9 @@ import importlib
 import logging
 import socket
 
-import netaddr
 from django.conf import settings
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
-from netaddr.core import AddrFormatError
 from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
 from netmiko.ssh_exception import NetMikoTimeoutException
@@ -95,46 +93,6 @@ class NetdevKeeper:
         self.netmiko_device_type = None
         self.onboarding_class = StandaloneOnboarding
         self.driver_addon_result = None
-
-    def check_ip(self):
-        """Method to check if the IP address form field was an IP address.
-
-        If it is a DNS name, attempt to resolve the DNS address and assign the IP address to the
-        name.
-
-        Returns:
-            (bool): True if the IP address is an IP address, or a DNS entry was found and
-                    reassignment of the ot.ip_address was done.
-                    False if unable to find a device IP (error)
-
-        Raises:
-          OnboardException("fail-general"):
-            When a prefix was entered for an IP address
-          OnboardException("fail-dns"):
-            When a Name lookup via DNS fails to resolve an IP address
-        """
-        try:
-            # Assign checked_ip to None for error handling
-            # If successful, this is an IP address and can pass
-            checked_ip = netaddr.IPAddress(self.hostname)
-            return True
-        # Catch when someone has put in a prefix address, raise an exception
-        except ValueError:
-            raise OnboardException(
-                reason="fail-general", message=f"ERROR appears a prefix was entered: {self.hostname}"
-            )
-        # An AddrFormatError exception means that there is not an IP address in the field, and should continue on
-        except AddrFormatError:
-            try:
-                # Do a lookup of name to get the IP address to connect to
-                checked_ip = socket.gethostbyname(self.hostname)
-                self.hostname = checked_ip
-                return True
-            except socket.gaierror:
-                # DNS Lookup has failed, Raise an exception for unable to complete DNS lookup
-                raise OnboardException(
-                    reason="fail-dns", message=f"ERROR failed to complete DNS lookup: {self.hostname}"
-                )
 
     def check_reachability(self):
         """Ensure that the device at the mgmt-ipaddr provided is reachable.
@@ -231,9 +189,6 @@ class NetdevKeeper:
           OnboardException('fail-general'):
             Any other unexpected device comms failure.
         """
-        # Check to see if the IP address entered was an IP address or a DNS entry, get the IP address
-        self.check_ip()
-
         self.check_reachability()
 
         logger.info("COLLECT: device information %s", self.hostname)

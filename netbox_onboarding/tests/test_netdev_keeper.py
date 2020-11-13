@@ -19,8 +19,8 @@ from django.test import TestCase
 from dcim.models import Site, DeviceRole, Platform
 
 from netbox_onboarding.exceptions import OnboardException
+from netbox_onboarding.helpers import onboarding_task_fqdn_to_ip
 from netbox_onboarding.models import OnboardingTask
-from netbox_onboarding.netdev_keeper import NetdevKeeper
 
 
 class NetdevKeeperTestCase(TestCase):
@@ -46,37 +46,32 @@ class NetdevKeeperTestCase(TestCase):
             ip_address="192.0.2.1/32", site=self.site1, role=self.device_role1, platform=self.platform1
         )
 
-    @mock.patch("netbox_onboarding.netdev_keeper.socket.gethostbyname")
+    @mock.patch("netbox_onboarding.helpers.socket.gethostbyname")
     def test_check_ip(self, mock_get_hostbyname):
         """Check DNS to IP address."""
         # Look up response value
         mock_get_hostbyname.return_value = "192.0.2.1"
 
-        # Create a Device Keeper object of the device
-        ndk4 = NetdevKeeper(hostname=self.onboarding_task4.ip_address)
-
-        # Check that the IP address is returned
-        self.assertTrue(ndk4.check_ip())
+        # FQDN -> IP
+        onboarding_task_fqdn_to_ip(ot=self.onboarding_task4)
 
         # Run the check to change the IP address
-        self.assertEqual(ndk4.hostname, "192.0.2.1")
+        self.assertEqual(self.onboarding_task4.ip_address, "192.0.2.1")
 
-    @mock.patch("netbox_onboarding.netdev_keeper.socket.gethostbyname")
+    @mock.patch("netbox_onboarding.helpers.socket.gethostbyname")
     def test_failed_check_ip(self, mock_get_hostbyname):
         """Check DNS to IP address failing."""
         # Look up a failed response
         mock_get_hostbyname.side_effect = gaierror(8)
-        ndk5 = NetdevKeeper(hostname=self.onboarding_task5.ip_address)
-        ndk7 = NetdevKeeper(hostname=self.onboarding_task7.ip_address)
 
         # Check for bad.local raising an exception
         with self.assertRaises(OnboardException) as exc_info:
-            ndk5.check_ip()
+            onboarding_task_fqdn_to_ip(ot=self.onboarding_task5)
             self.assertEqual(exc_info.exception.message, "ERROR failed to complete DNS lookup: bad.local")
             self.assertEqual(exc_info.exception.reason, "fail-dns")
 
         # Check for exception with prefix address entered
         with self.assertRaises(OnboardException) as exc_info:
-            ndk7.check_ip()
+            onboarding_task_fqdn_to_ip(ot=self.onboarding_task7)
             self.assertEqual(exc_info.exception.reason, "fail-prefix")
             self.assertEqual(exc_info.exception.message, "ERROR appears a prefix was entered: 192.0.2.1/32")
