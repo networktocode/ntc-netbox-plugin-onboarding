@@ -43,7 +43,6 @@ REDIS = {
         "PORT": int(os.environ.get("REDIS_PORT", 6379)),
         "PASSWORD": os.environ.get("REDIS_PASSWORD", ""),
         "DATABASE": 1,
-        "DEFAULT_TIMEOUT": 300,
         "SSL": bool(os.environ.get("REDIS_SSL", False)),
     },
     "tasks": {
@@ -51,10 +50,11 @@ REDIS = {
         "PORT": int(os.environ.get("REDIS_PORT", 6379)),
         "PASSWORD": os.environ.get("REDIS_PASSWORD", ""),
         "DATABASE": 0,
-        "DEFAULT_TIMEOUT": 300,
         "SSL": bool(os.environ.get("REDIS_SSL", False)),
     },
 }
+
+RQ_DEFAULT_TIMEOUT = 300
 
 
 #########################
@@ -179,11 +179,11 @@ PREFER_IPV4 = os.environ.get("PREFER_IPV4", False)
 
 # Remote authentication support
 REMOTE_AUTH_ENABLED = False
-REMOTE_AUTH_BACKEND = "utilities.auth_backends.RemoteUserBackend"
+REMOTE_AUTH_BACKEND = "netbox.authentication.RemoteUserBackend"
 REMOTE_AUTH_HEADER = "HTTP_REMOTE_USER"
 REMOTE_AUTH_AUTO_CREATE_USER = True
 REMOTE_AUTH_DEFAULT_GROUPS = []
-REMOTE_AUTH_DEFAULT_PERMISSIONS = []
+REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
 
 # This determines how often the GitHub API is called to check the latest release of NetBox. Must be at least 1 hour.
 RELEASE_CHECK_TIMEOUT = 24 * 3600
