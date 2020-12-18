@@ -401,23 +401,25 @@ class NetboxKeeper:
 
     def ensure_interface(self):
         """Ensures that the interface associated with the mgmt_ipaddr exists and is assigned to the device."""
-        self.nb_mgmt_ifname, _ = Interface.objects.get_or_create(name=self.netdev_mgmt_ifname, device=self.device)
+        if self.netdev_mgmt_ifname:
+            self.nb_mgmt_ifname, _ = Interface.objects.get_or_create(name=self.netdev_mgmt_ifname, device=self.device)
 
     def ensure_primary_ip(self):
         """Ensure mgmt_ipaddr exists in IPAM, has the device interface, and is assigned as the primary IP address."""
         # see if the primary IP address exists in IPAM
-        self.nb_primary_ip, created = IPAddress.objects.get_or_create(
-            address=f"{self.netdev_mgmt_ip_address}/{self.netdev_mgmt_pflen}"
-        )
+        if self.netdev_mgmt_ip_address and self.netdev_mgmt_pflen:
+            self.nb_primary_ip, created = IPAddress.objects.get_or_create(
+                address=f"{self.netdev_mgmt_ip_address}/{self.netdev_mgmt_pflen}"
+            )
 
-        if created or not self.nb_primary_ip in self.nb_mgmt_ifname.ip_addresses.all():
-            logger.info("ASSIGN: IP address %s to %s", self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
-            self.nb_mgmt_ifname.ip_addresses.add(self.nb_primary_ip)
-            self.nb_mgmt_ifname.save()
+            if created or not self.nb_primary_ip in self.nb_mgmt_ifname.ip_addresses.all():
+                logger.info("ASSIGN: IP address %s to %s", self.nb_primary_ip.address, self.nb_mgmt_ifname.name)
+                self.nb_mgmt_ifname.ip_addresses.add(self.nb_primary_ip)
+                self.nb_mgmt_ifname.save()
 
-        # Ensure the primary IP is assigned to the device
-        self.device.primary_ip4 = self.nb_primary_ip
-        self.device.save()
+            # Ensure the primary IP is assigned to the device
+            self.device.primary_ip4 = self.nb_primary_ip
+            self.device.save()
 
     def ensure_device(self):
         """Ensure that the device represented by the DevNetKeeper exists in the NetBox system."""
