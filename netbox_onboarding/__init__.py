@@ -28,6 +28,7 @@ class OnboardingConfig(PluginConfig):
     base_url = "onboarding"
     required_settings = []
     min_version = "2.8.1"
+    max_version = "2.10.99"
     default_settings = {
         "create_platform_if_missing": True,
         "create_manufacturer_if_missing": True,
