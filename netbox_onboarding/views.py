@@ -14,10 +14,9 @@ limitations under the License.
 import logging
 
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import View
+
 
 from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29, NETBOX_RELEASE_210
-
 from .filters import OnboardingTaskFilter
 from .forms import OnboardingTaskForm, OnboardingTaskFilterForm, OnboardingTaskFeedCSVForm
 from .models import OnboardingTask
@@ -25,10 +24,11 @@ from .tables import OnboardingTaskTable, OnboardingTaskFeedBulkTable
 
 logger = logging.getLogger("rq.worker")
 
-# pylint: disable=ungrouped-imports
+# pylint: disable=ungrouped-imports,no-name-in-module
 
 if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     from django.contrib.auth.mixins import PermissionRequiredMixin
+    from django.views.generic import View
     from utilities.views import BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
 
     class ReleaseMixinOnboardingTaskView(PermissionRequiredMixin, View):
@@ -57,9 +57,8 @@ if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
         permission_required = "netbox_onboarding.add_onboardingtask"
 
 
-elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29 and NETBOX_RELEASE_CURRENT > NETBOX_RELEASE_210:
-    from utilities.views import ObjectView  # pylint: disable=no-name-in-module
-    from utilities.views import BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
+elif NETBOX_RELEASE_29 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_210:
+    from utilities.views import ObjectView, BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
 
     class ReleaseMixinOnboardingTaskView(ObjectView):
         """Release Mixin View for presenting a single OnboardingTask."""
@@ -78,21 +77,23 @@ elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29 and NETBOX_RELEASE_CURRENT > NET
 
 
 else:
-    from netbox.views.generic import ObjectView, BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
+    from netbox.views import generic
 
-    class ReleaseMixinOnboardingTaskView(ObjectView):
+    # ObjectView, BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
+
+    class ReleaseMixinOnboardingTaskView(generic.ObjectView):
         """Release Mixin View for presenting a single OnboardingTask."""
 
-    class ReleaseMixinOnboardingTaskListView(ObjectListView):
+    class ReleaseMixinOnboardingTaskListView(generic.ObjectListView):
         """Release Mixin View for listing all extant OnboardingTasks."""
 
-    class ReleaseMixinOnboardingTaskCreateView(ObjectEditView):
+    class ReleaseMixinOnboardingTaskCreateView(generic.ObjectEditView):
         """Release Mixin View for creating a new OnboardingTask."""
 
-    class ReleaseMixinOnboardingTaskBulkDeleteView(BulkDeleteView):
+    class ReleaseMixinOnboardingTaskBulkDeleteView(generic.BulkDeleteView):
         """Release Mixin View for deleting one or more OnboardingTasks."""
 
-    class ReleaseMixinOnboardingTaskFeedBulkImportView(BulkImportView):
+    class ReleaseMixinOnboardingTaskFeedBulkImportView(generic.BulkImportView):
         """Release Mixin View for bulk-importing a CSV file to create OnboardingTasks."""
 
 
