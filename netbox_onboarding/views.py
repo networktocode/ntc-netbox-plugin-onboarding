@@ -104,9 +104,9 @@ class OnboardingTaskView(ReleaseMixinOnboardingTaskView):
 
     def get(self, request, pk):  # pylint: disable=invalid-name, missing-function-docstring
         """Get request."""
-        onboardingtask = get_object_or_404(self.queryset, pk=pk)
+        instance = get_object_or_404(self.queryset, pk=pk)
 
-        return render(request, "netbox_onboarding/onboardingtask.html", {"onboardingtask": onboardingtask,})
+        return render(request, "netbox_onboarding/onboardingtask.html", {"object": instance,})
 
 
 class OnboardingTaskListView(ReleaseMixinOnboardingTaskListView):
