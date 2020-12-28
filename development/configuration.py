@@ -1,9 +1,15 @@
 """NetBox configuration."""
 import os
 from distutils.util import strtobool
+from packaging import version
 from django.core.exceptions import ImproperlyConfigured
 from .settings import VERSION  # pylint: disable=relative-beyond-top-level
 
+
+NETBOX_RELEASE_CURRENT = version.parse(VERSION)
+NETBOX_RELEASE_28 = version.parse("2.8")
+NETBOX_RELEASE_29 = version.parse("2.9")
+NETBOX_RELEASE_211 = version.parse("2.11")
 
 # Enforce required configuration parameters
 for key in [
@@ -32,7 +38,13 @@ def is_truthy(arg):
     """
     if isinstance(arg, bool):
         return arg
-    return bool(strtobool(arg))
+
+    try:
+        bool_val = strtobool(arg)
+    except ValueError:
+        raise ImproperlyConfigured(f"Unexpected variable value: {arg}")  # pylint: disable=raise-missing-from
+
+    return bool(bool_val)
 
 
 # For reference see http://netbox.readthedocs.io/en/latest/configuration/mandatory-settings/
@@ -59,7 +71,7 @@ DATABASE = {
     "PASSWORD": os.environ["POSTGRES_PASSWORD"],
     # PostgreSQL password
     "HOST": os.environ["POSTGRES_HOST"],  # Database server
-    "PORT": 5432 if not os.environ.get("POSTGRES_PORT", False) else int(os.environ["POSTGRES_PORT"]),  # Database port
+    "PORT": 5432 if "POSTGRES_PORT" not in os.environ else int(os.environ["POSTGRES_PORT"]),  # Database port
 }
 
 # This key is used for secure generation of random numbers and strings. It must never be exposed outside of this file.
@@ -88,14 +100,14 @@ REDIS = {
     },
 }
 
-if VERSION.startswith("2.8."):
+if NETBOX_RELEASE_28 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     # NetBox 2.8.x Specific Settings
     REDIS["caching"]["DEFAULT_TIMEOUT"] = 300
     REDIS["tasks"]["DEFAULT_TIMEOUT"] = 300
-elif VERSION.startswith("2.9.") or VERSION.startswith("2.10."):
+elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_211:
     RQ_DEFAULT_TIMEOUT = 300
 else:
-    raise ImproperlyConfigured(f"Version {VERSION} of NetBox is unsupported at this time.")
+    raise ImproperlyConfigured(f"Version {NETBOX_RELEASE_CURRENT} of NetBox is unsupported at this time.")
 
 #########################
 #                       #
@@ -232,15 +244,15 @@ REMOTE_AUTH_HEADER = "HTTP_REMOTE_USER"
 REMOTE_AUTH_AUTO_CREATE_USER = True
 REMOTE_AUTH_DEFAULT_GROUPS = []
 
-if VERSION.startswith("2.8."):
+if NETBOX_RELEASE_28 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     # NetBox 2.8.x Specific Settings
     REMOTE_AUTH_BACKEND = "utilities.auth_backends.RemoteUserBackend"
     REMOTE_AUTH_DEFAULT_PERMISSIONS = []
-elif VERSION.startswith("2.9.") or VERSION.startswith("2.10."):
+elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_211:
     REMOTE_AUTH_BACKEND = "netbox.authentication.RemoteUserBackend"
     REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
 else:
-    raise ImproperlyConfigured(f"Version {VERSION} of NetBox is unsupported at this time.")
+    raise ImproperlyConfigured(f"Version {NETBOX_RELEASE_CURRENT} of NetBox is unsupported at this time.")
 
 # This determines how often the GitHub API is called to check the latest release of NetBox. Must be at least 1 hour.
 RELEASE_CHECK_TIMEOUT = 24 * 3600

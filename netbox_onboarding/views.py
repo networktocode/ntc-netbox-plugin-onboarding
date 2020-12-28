@@ -57,7 +57,7 @@ if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
         permission_required = "netbox_onboarding.add_onboardingtask"
 
 
-elif NETBOX_RELEASE_29 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_210:
+elif NETBOX_RELEASE_29 <= NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_210:
     from utilities.views import ObjectView, BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView
 
     class ReleaseMixinOnboardingTaskView(ObjectView):
@@ -76,7 +76,7 @@ elif NETBOX_RELEASE_29 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_210:
         """Release Mixin View for bulk-importing a CSV file to create OnboardingTasks."""
 
 
-else:
+elif NETBOX_RELEASE_CURRENT >= NETBOX_RELEASE_210:
     from netbox.views import generic
 
     # ObjectView, BulkDeleteView, BulkImportView, ObjectEditView, ObjectListView

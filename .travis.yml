@@ -5,12 +5,11 @@ python:
 - '3.7'
 - '3.8'
 env:
-# Each version of NetBox listed here must have a corresponding directory/configuration file 
-# under development/netbox_<NETBOX_VER>/configuration.py
+# Each version of NetBox listed here uses configuration stored in development/configuration.py
   matrix:
   - NETBOX_VER=v2.8.9
   - NETBOX_VER=v2.9.11
-  - NETBOX_VER=v2.10.1
+  - NETBOX_VER=v2.10.2
 # Encrypted value for PYPI_TOKEN, this secret has been generated with the following command
 #   travis encrypt PYPI_TOKEN=<value> --add env.global --com
 # Might need to update it once the repo is publish (travis-ci.org vs travis-ci.com)
