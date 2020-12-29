@@ -106,7 +106,9 @@ class OnboardingTaskView(ReleaseMixinOnboardingTaskView):
         """Get request."""
         instance = get_object_or_404(self.queryset, pk=pk)
 
-        return render(request, "netbox_onboarding/onboardingtask.html", {"object": instance,})
+        return render(
+            request, "netbox_onboarding/onboardingtask.html", {"object": instance, "onboardingtask": instance}
+        )
 
 
 class OnboardingTaskListView(ReleaseMixinOnboardingTaskListView):

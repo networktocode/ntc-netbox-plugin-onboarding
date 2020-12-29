@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load helpers %}
+{% load static %}
+
+{% block header %}
+    <div class="row noprint">
+        <div class="col">
+            <ol class="breadcrumb">
+                <li><a href="{% url 'plugins:netbox_onboarding:onboardingtask_list' %}">Onboarding tasks</a></li>
+                <li>{{ onboardingtask.pk }}</li>
+            </ol>
+        </div>
+    </div>
+
+    <h1>{% block title %}Device: {{ onboardingtask.ip_address }}{% endblock %}</h1>
+
+    <ul class="nav nav-tabs">
+        <li role="presentation"{% if not active_tab %} class="active"{% endif %}>
+            <a href="{{ onboardingtask.get_absolute_url }}">Onboarding Task</a>
+        </li>
+        {% if perms.extras.view_onboardingtaskchange %}
+            <li role="presentation"{% if active_tab == 'changelog' %} class="active"{% endif %}>
+                <a href="{% url 'plugins:netbox_onboarding:onboardingtask_changelog' pk=onboardingtask.pk %}">Change Log</a>
+            </li>
+        {% endif %}
+    </ul>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-7">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <strong>Onboarding Task</strong>
+            </div>
+            <table class="table table-hover panel-body attr-table">
+                <tr>
+                    <td>Created Device</td>
+                    <td>{{ onboardingtask.created_device|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>IP Address</td>
+                    <td>{{ onboardingtask.ip_address|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Port</td>
+                    <td>{{ onboardingtask.port|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Timeout</td>
+                    <td>{{ onboardingtask.timeout|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Site</td>
+                    <td>{{ onboardingtask.site|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Role</td>
+                    <td>{{ onboardingtask.role|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Device Type</td>
+                    <td>{{ onboardingtask.device_type|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Platform</td>
+                    <td>{{ onboardingtask.platform|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td>{{ onboardingtask.status|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Failed Reason</td>
+                    <td>{{ onboardingtask.failed_reason|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Message</td>
+                    <td>{{ onboardingtask.message|placeholder }}</td>
+                </tr>
+                <tr>
+                    <td>Created</td>
+                    <td>{{ onboardingtask.created|placeholder }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script src="{% static 'js/graphs.js' %}?v{{ settings.VERSION }}"></script>
+{% endblock %}
