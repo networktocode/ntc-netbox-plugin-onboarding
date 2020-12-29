@@ -39,5 +39,5 @@ deploy:
   on:
     tags: true
     branch: master
-    condition: $NETBOX_VER = master
+    condition: $NETBOX_VER = v2.9.11
     python: 3.7
