@@ -1,2 +1,6 @@
-{% extends 'utilities/obj_edit.html' %}
+{% if "2.8." in settings.VERSION or "2.9." in settings.VERSION %}
+    {% include 'utilities/obj_edit.html' %}
+{% else %}
+    {% include 'generic/object_edit.html' %}
+{% endif %}
 {% load form_helpers %}

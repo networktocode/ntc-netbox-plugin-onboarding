@@ -15,6 +15,8 @@ limitations under the License.
 from extras.plugins import PluginMenuButton, PluginMenuItem
 from utilities.choices import ButtonColorChoices
 
+from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_210
+
 menu_items = (
     PluginMenuItem(
         link="plugins:netbox_onboarding:onboardingtask_list",
@@ -24,14 +26,16 @@ menu_items = (
             PluginMenuButton(
                 link="plugins:netbox_onboarding:onboardingtask_add",
                 title="Onboard",
-                icon_class="fa fa-plus",
+                icon_class="mdi mdi-plus-thick" if NETBOX_RELEASE_CURRENT >= NETBOX_RELEASE_210 else "fa fa-plus",
                 color=ButtonColorChoices.GREEN,
                 permissions=["netbox_onboarding.add_onboardingtask"],
             ),
             PluginMenuButton(
                 link="plugins:netbox_onboarding:onboardingtask_import",
                 title="Bulk Onboard",
-                icon_class="fa fa-download",
+                icon_class="mdi mdi-database-import-outline"
+                if NETBOX_RELEASE_CURRENT >= NETBOX_RELEASE_210
+                else "fa fa-download",
                 color=ButtonColorChoices.BLUE,
                 permissions=["netbox_onboarding.add_onboardingtask"],
             ),

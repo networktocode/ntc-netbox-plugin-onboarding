@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ntc-netbox-plugin-onboarding"
-version = "2.0.0"
+version = "2.1.0"
 description = "A plugin for NetBox to easily onboard new devices."
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -19,10 +19,11 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6 || ^3.7 || ^3.8"
-invoke = "^1.4.1"
-napalm = "^2.5.0"
+napalm = ">=2.5.0, <4"
+zipp = "^3.4.0"
 
 [tool.poetry.dev-dependencies]
+invoke = "^1.4.1"
 black = "^19.10b0"
 yamllint = "^1.23.0"
 bandit = "^1.6.2"
@@ -52,6 +53,42 @@ exclude = '''
                      # the root of the project
 )
 '''
+
+[tool.pylint.master]
+# Include the pylint_django plugin to avoid spurious warnings about Django patterns
+load-plugins="pylint_django"
+
+# Don't cache data for later comparisons
+persistent="no"
+
+[tool.pylint.basic]
+# No docstrings required for private methods (Pylint default), or for test_ functions, or for inner Meta classes.
+no-docstring-rgx="^(_|test_|Meta$)"
+# Allow "ot" (OnboardingTask instance) as an acceptable variable name
+good-names="ot,"
+
+[tool.pylint.messages_control]
+# Line length is enforced by Black, so pylint doesn't need to check it.
+# Pylint and Black disagree about how to format multi-line arrays; Black wins.
+# Disabled due to noise: too-few-public-methods, too-many-ancestors, too-many-instance-attributes
+disable = """,
+    line-too-long,
+    bad-continuation,
+    too-few-public-methods,
+    too-many-ancestors,
+    too-many-instance-attributes,
+    duplicate-code,
+    raise-missing-from,
+    super-with-arguments
+    """
+
+[tool.pylint.miscellaneous]
+# Don't flag TODO as a failure, let us commit with things that still need to be done in the code
+notes = """,
+    FIXME,
+    XXX,
+    """
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"

@@ -26,9 +26,13 @@ pip install ntc-netbox-plugin-onboarding
 systemctl restart netbox netbox-rq
 ```
 
-> The ntc-netbox-plugin-onboarding v1.3 is compatible with NetBox 2.8
+### Compatibility Matrix
 
-> The ntc-netbox-plugin-onboarding v2 is compatible with NetBox 2.8 and NetBox 2.9
+|                       | Netbox 2.8 | Netbox 2.9 | Netbox 2.10 |
+|-----------------------|------------|------------|-------------|
+| Onboarding Plugin 1.3 |      X     |            |             |
+| Onboarding Plugin 2.0 |      X     |      X     |             |
+| Onboarding Plugin 2.1 |      X     |      X     |      X      |
 
 To ensure NetBox Onboarding plugin is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the NetBox root directory (alongside `requirements.txt`) and list the `ntc-netbox-plugin-onboarding` package:
 
@@ -84,6 +88,10 @@ The plugin behavior can be controlled with the following list of settings
 currently two strategies, strict and loose. Strict has to be a direct match, normally 
 using a slug. Loose allows a range of search criteria to match a single object. If multiple
 objects are returned an error is raised. 
+
+## Upgrades
+
+When a new release comes out it may be necessary to run a migration of the database to account for any changes in the data models used by this plugin. Execute the command `python3 manage.py migrate`from the NetBox install `netbox/` directory after updating the package.
 
 ## Usage
 

@@ -22,6 +22,7 @@ from dcim.models import Device
 from .choices import OnboardingFailChoices
 from .choices import OnboardingStatusChoices
 from .exceptions import OnboardException
+from .helpers import onboarding_task_fqdn_to_ip
 from .metrics import onboardingtask_results_counter
 from .models import OnboardingDevice
 from .models import OnboardingTask
@@ -42,6 +43,9 @@ def onboard_device(task_id, credentials):  # pylint: disable=too-many-statements
     secret = credentials.secret
 
     ot = OnboardingTask.objects.get(id=task_id)
+
+    # Rewrite FQDN to IP for Onboarding Task
+    onboarding_task_fqdn_to_ip(ot)
 
     logger.info("START: onboard device")
     onboarded_device = None
