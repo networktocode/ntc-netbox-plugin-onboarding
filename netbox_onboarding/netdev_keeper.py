@@ -226,7 +226,11 @@ class NetdevKeeper:
 
             driver = get_network_driver(self.napalm_driver)
 
-            optional_args = self.optional_args.copy()
+            if self.optional_args:
+                optional_args = self.optional_args.copy()
+            else:
+                optional_args = {}
+
             if self.port:
                 optional_args["port"] = self.port
 
@@ -264,6 +268,10 @@ class NetdevKeeper:
                     )
                 except ImportError as exc:
                     raise OnboardException(reason="fail-general", message="ERROR: ImportError: %s" % exc.args[0])
+            elif module_name and not self.load_driver_extension:
+                logger.info(
+                    "INFO: Not loading driver extension"
+                )
             else:
                 logger.info(
                     "INFO: No onboarding extension defined for napalm driver %s, using default napalm driver",
