@@ -83,6 +83,7 @@ class NetdevKeeper:
           password (str): Device password (if unspecified, NAPALM_PASSWORD settings variable will be used)
           secret (str): Device secret password (if unspecified, NAPALM_ARGS["secret"] settings variable will be used)
           napalm_driver (str): Napalm driver name to use to onboard network device
+          optional_args (dict): Optional arguments passed to NAPALM and Netmiko
 
         Raises:
           OnboardException('fail-config'):
@@ -96,7 +97,14 @@ class NetdevKeeper:
         self.password = password
         self.secret = secret
         self.napalm_driver = napalm_driver
-        self.optional_args = optional_args
+
+        # Netmiko and NAPALM expects optional_args to be a dictionary.
+        if isinstance(optional_args, dict):
+            self.optional_args = optional_args
+        elif optional_args is None:
+            self.optional_args = {}
+        else:
+            raise OnboardException(reason="fail-general", message="Optional arguments should be None or a dict")
 
         self.facts = None
         self.ip_ifs = None
@@ -226,19 +234,21 @@ class NetdevKeeper:
 
             driver = get_network_driver(self.napalm_driver)
 
-            optional_args = self.optional_args.copy()
+            # Create NAPALM optional arguments
+            napalm_optional_args = self.optional_args.copy()
+
             if self.port:
-                optional_args["port"] = self.port
+                napalm_optional_args["port"] = self.port
 
             if self.secret:
-                optional_args["secret"] = self.secret
+                napalm_optional_args["secret"] = self.secret
 
             napalm_device = driver(
                 hostname=self.hostname,
                 username=self.username,
                 password=self.password,
                 timeout=self.timeout,
-                optional_args=optional_args,
+                optional_args=napalm_optional_args,
             )
 
             napalm_device.open()
