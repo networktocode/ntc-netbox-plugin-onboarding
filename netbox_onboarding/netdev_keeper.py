@@ -274,6 +274,8 @@ class NetdevKeeper:
                     )
                 except ImportError as exc:
                     raise OnboardException(reason="fail-general", message="ERROR: ImportError: %s" % exc.args[0])
+            elif module_name and not self.load_driver_extension:
+                logger.info("INFO: Skipping execution of driver extension")
             else:
                 logger.info(
                     "INFO: No onboarding extension defined for napalm driver %s, using default napalm driver",
