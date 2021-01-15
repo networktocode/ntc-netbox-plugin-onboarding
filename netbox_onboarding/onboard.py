@@ -12,8 +12,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import json
-
 from django.conf import settings
 
 from .netdev_keeper import NetdevKeeper
@@ -40,9 +38,7 @@ class OnboardingTaskManager:
     def optional_args(self):
         """Return platform optional args."""
         if self.ot.platform and self.ot.platform.napalm_args:
-            napalm_args = json.loads(self.ot.platform.napalm_args)
-
-            return napalm_args
+            return self.ot.platform.napalm_args
 
         return {}
 
