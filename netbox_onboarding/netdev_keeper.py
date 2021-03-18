@@ -15,7 +15,7 @@ limitations under the License.
 import importlib
 import logging
 import socket
-
+from dcim.models import Platform
 from django.conf import settings
 from napalm import get_network_driver
 from napalm.base.exceptions import ConnectionException, CommandErrorException
@@ -24,8 +24,6 @@ from netmiko.ssh_autodetect import SSHDetect
 from netmiko.ssh_exception import NetMikoAuthenticationException
 from netmiko.ssh_exception import NetMikoTimeoutException
 from paramiko.ssh_exception import SSHException
-
-from dcim.models import Platform
 
 from netbox_onboarding.onboarding.onboarding import StandaloneOnboarding
 from .constants import NETMIKO_TO_NAPALM_STATIC
@@ -178,7 +176,12 @@ class NetdevKeeper:
             logger.error("ERROR: %s", str(err))
             raise OnboardException(reason="fail-general", message=f"ERROR: {str(err)}")
 
-        logger.info("INFO device type is: %s", guessed_device_type)
+        else:
+            if guessed_device_type is None:
+                logger.error("ERROR: Could not detect device type with SSHDetect")
+                raise OnboardException(
+                    reason="fail-general", message="ERROR: Could not detect device type with SSHDetect"
+                )
 
         return guessed_device_type
 
