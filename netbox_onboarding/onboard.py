@@ -89,6 +89,11 @@ class OnboardingManager:
         self.username = username or settings.NAPALM_USERNAME
         self.password = password or settings.NAPALM_PASSWORD
         self.secret = secret or otm.optional_args.get("secret", None) or settings.NAPALM_ARGS.get("secret", None)
+        self.optional_args = otm.optional_args or settings.NAPALM_ARGS
+
+        # Change transport protocol to telnet
+        if otm.port == 23:
+            self.optional_args["transport"] = "telnet"
 
         netdev = NetdevKeeper(
             hostname=otm.ip_address,
@@ -98,7 +103,7 @@ class OnboardingManager:
             password=self.password,
             secret=self.secret,
             napalm_driver=otm.napalm_driver,
-            optional_args=otm.optional_args or settings.NAPALM_ARGS,
+            optional_args=self.optional_args,
         )
 
         netdev.get_onboarding_facts()
