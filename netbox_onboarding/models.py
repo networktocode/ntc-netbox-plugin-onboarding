@@ -17,14 +17,17 @@ from django.db import models
 from django.urls import reverse
 from dcim.models import Device
 from .choices import OnboardingStatusChoices, OnboardingFailChoices
-from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29
+from .release import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_29, NETBOX_RELEASE_211
 
 # Support NetBox 2.8
 if NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     from utilities.models import ChangeLoggedModel  # pylint: disable=no-name-in-module, import-error
-# Support NetBox 2.9
-else:
+# Support NetBox 2.9, NetBox 2.10
+elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_211:
     from extras.models import ChangeLoggedModel  # pylint: disable=no-name-in-module, import-error
+# Support NetBox 2.11
+else:
+    from netbox.models import ChangeLoggedModel  # pylint: disable=no-name-in-module, import-error
 
 
 class OnboardingTask(ChangeLoggedModel):
