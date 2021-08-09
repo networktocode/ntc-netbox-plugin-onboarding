@@ -28,11 +28,12 @@ systemctl restart netbox netbox-rq
 
 ### Compatibility Matrix
 
-|                       | Netbox 2.8 | Netbox 2.9 | Netbox 2.10 |
-|-----------------------|------------|------------|-------------|
-| Onboarding Plugin 1.3 |      X     |            |             |
-| Onboarding Plugin 2.0 |      X     |      X     |             |
-| Onboarding Plugin 2.1 |      X     |      X     |      X      |
+|                       | Netbox 2.8 | Netbox 2.9 | Netbox 2.10 | Netbox 2.11 |
+|-----------------------|------------|------------|-------------|-------------|
+| Onboarding Plugin 1.3 |      X     |            |             |             |
+| Onboarding Plugin 2.0 |      X     |      X     |             |             |
+| Onboarding Plugin 2.1 |      X     |      X     |      X      |             |
+| Onboarding Plugin 2.2 |      X     |      X     |      X      |      X      |
 
 To ensure NetBox Onboarding plugin is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the NetBox root directory (alongside `requirements.txt`) and list the `ntc-netbox-plugin-onboarding` package:
 

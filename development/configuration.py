@@ -9,7 +9,7 @@ from .settings import VERSION  # pylint: disable=relative-beyond-top-level
 NETBOX_RELEASE_CURRENT = version.parse(VERSION)
 NETBOX_RELEASE_28 = version.parse("2.8")
 NETBOX_RELEASE_29 = version.parse("2.9")
-NETBOX_RELEASE_211 = version.parse("2.11")
+NETBOX_RELEASE_212 = version.parse("2.12")
 
 # Enforce required configuration parameters
 for key in [
@@ -104,7 +104,7 @@ if NETBOX_RELEASE_28 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     # NetBox 2.8.x Specific Settings
     REDIS["caching"]["DEFAULT_TIMEOUT"] = 300
     REDIS["tasks"]["DEFAULT_TIMEOUT"] = 300
-elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_211:
+elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_212:
     RQ_DEFAULT_TIMEOUT = 300
 else:
     raise ImproperlyConfigured(f"Version {NETBOX_RELEASE_CURRENT} of NetBox is unsupported at this time.")
@@ -248,7 +248,7 @@ if NETBOX_RELEASE_28 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     # NetBox 2.8.x Specific Settings
     REMOTE_AUTH_BACKEND = "utilities.auth_backends.RemoteUserBackend"
     REMOTE_AUTH_DEFAULT_PERMISSIONS = []
-elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_211:
+elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_212:
     REMOTE_AUTH_BACKEND = "netbox.authentication.RemoteUserBackend"
     REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
 else:
