@@ -11,6 +11,8 @@ env:
   - NETBOX_VER=v2.9.11
   - NETBOX_VER=v2.10.10
   - NETBOX_VER=v2.11.10
+  - NETBOX_VER=v3.0.12
+  - NETBOX_VER=v3.1.0
 # Encrypted value for PYPI_TOKEN, this secret has been generated with the following command
 #   travis encrypt PYPI_TOKEN=<value> --add env.global --com
 # Might need to update it once the repo is publish (travis-ci.org vs travis-ci.com)

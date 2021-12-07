@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ntc-netbox-plugin-onboarding"
-version = "2.2.0"
+version = "3.0.0"
 description = "A plugin for NetBox to easily onboard new devices."
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6 || ^3.7 || ^3.8"
+python = "^3.7 || ^3.8 || ^3.9"
 napalm = ">=2.5.0, <4"
 zipp = "^3.4.0"
 
