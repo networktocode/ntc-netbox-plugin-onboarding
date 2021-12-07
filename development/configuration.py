@@ -10,6 +10,7 @@ NETBOX_RELEASE_CURRENT = version.parse(VERSION)
 NETBOX_RELEASE_28 = version.parse("2.8")
 NETBOX_RELEASE_29 = version.parse("2.9")
 NETBOX_RELEASE_212 = version.parse("2.12")
+NETBOX_RELEASE_30 = version.parse("3.0")
 
 # Enforce required configuration parameters
 for key in [
@@ -104,7 +105,7 @@ if NETBOX_RELEASE_28 < NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_29:
     # NetBox 2.8.x Specific Settings
     REDIS["caching"]["DEFAULT_TIMEOUT"] = 300
     REDIS["tasks"]["DEFAULT_TIMEOUT"] = 300
-elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_212:
+elif NETBOX_RELEASE_CURRENT < NETBOX_RELEASE_30:
     RQ_DEFAULT_TIMEOUT = 300
 else:
     raise ImproperlyConfigured(f"Version {NETBOX_RELEASE_CURRENT} of NetBox is unsupported at this time.")
