@@ -2,3 +2,4 @@ ntc_netbox_plugin_onboarding.egg-info
 __pycache__
 *.swp
 dist
+.vscode/

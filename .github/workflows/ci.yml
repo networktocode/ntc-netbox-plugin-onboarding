@@ -1,0 +1,200 @@
+---
+name: "CI"
+concurrency: # Cancel any existing runs of this workflow for this same PR
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+on: # yamllint disable
+  push:
+    branches:
+      - "master"
+      - "develop"
+    tags:
+      - "v*"
+  pull_request: ~
+jobs:
+  build:
+    runs-on: "ubuntu-20.04"
+    env:
+      PYTHON_VER: "3.7"
+      NETBOX_VER: "v2.9.11"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v2"
+      - name: "Setup environment"
+        uses: "networktocode/gh-action-setup-poetry-environment@v3"
+      - name: "Build Container"
+        run: "poetry run invoke build"
+  black:
+    runs-on: "ubuntu-20.04"
+    env:
+      PYTHON_VER: "3.7"
+      NETBOX_VER: "v2.9.11"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Setup environment"
+        uses: "networktocode/gh-action-setup-poetry-environment@v3"
+      - name: "Build Container"
+        run: "poetry run invoke build"
+      - name: "Linting: black"
+        run: "poetry run invoke black"
+    needs:
+      - "build"
+  bandit:
+    runs-on: "ubuntu-20.04"
+    env:
+      PYTHON_VER: "3.7"
+      NETBOX_VER: "v2.9.11"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Setup environment"
+        uses: "networktocode/gh-action-setup-poetry-environment@v3"
+      - name: "Build Container"
+        run: "poetry run invoke build"
+      - name: "Linting: bandit"
+        run: "poetry run invoke bandit"
+    needs:
+      - "build"
+  pydocstyle:
+    runs-on: "ubuntu-20.04"
+    env:
+      PYTHON_VER: "3.7"
+      NETBOX_VER: "v2.9.11"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Setup environment"
+        uses: "networktocode/gh-action-setup-poetry-environment@v3"
+      - name: "Build Container"
+        run: "poetry run invoke build"
+      - name: "Linting: pydocstyle"
+        run: "poetry run invoke pydocstyle"
+    needs:
+      - "build"
+  pylint:
+    runs-on: "ubuntu-20.04"
+    env:
+      PYTHON_VER: "3.7"
+      NETBOX_VER: "v2.9.11"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Setup environment"
+        uses: "networktocode/gh-action-setup-poetry-environment@v3"
+      - name: "Build Container"
+        run: "poetry run invoke build"
+      - name: "Linting: Pylint"
+        run: "poetry run invoke pylint"
+    needs:
+      - "black"
+      - "bandit"
+      - "pydocstyle"
+  unittest:
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.6", "3.7", "3.8"]
+        netbox-version: ["v2.8.9", "v2.9.11", "v2.10.10", "v2.11.10"]
+    runs-on: "ubuntu-20.04"
+    env:
+      PYTHON_VER: "${{ matrix.python-version }}"
+      NETBOX_VER: "${{ matrix.netbox-version }}"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Setup environment"
+        uses: "networktocode/gh-action-setup-poetry-environment@v3"
+      - name: "Build Container"
+        run: "poetry run invoke build"
+      - name: "Run Tests"
+        run: "poetry run invoke unittest"
+    needs:
+      - "pylint"
+  publish_gh:
+    name: "Publish to GitHub"
+    runs-on: "ubuntu-20.04"
+    if: "startsWith(github.ref, 'refs/tags/v')"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Set up Python"
+        uses: "actions/setup-python@v4"
+        with:
+          python-version: "3.9"
+      - name: "Install Python Packages"
+        run: "pip install poetry"
+      - name: "Set env"
+        run: "echo RELEASE_VERSION=${GITHUB_REF:10} >> $GITHUB_ENV"
+      - name: "Run Poetry Version"
+        run: "poetry version $RELEASE_VERSION"
+      - name: "Upload binaries to release"
+        uses: "svenstaro/upload-release-action@v2"
+        with:
+          repo_token: "${{ secrets.NTC_GITHUB_TOKEN }}"
+          file: "dist/*"
+          tag: "${{ github.ref }}"
+          overwrite: true
+          file_glob: true
+    needs:
+      - "unittest"
+  publish_pypi:
+    name: "Push Package to PyPI"
+    runs-on: "ubuntu-20.04"
+    if: "startsWith(github.ref, 'refs/tags/v')"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v3"
+      - name: "Set up Python"
+        uses: "actions/setup-python@v4"
+        with:
+          python-version: "3.9"
+      - name: "Install Python Packages"
+        run: "pip install poetry"
+      - name: "Set env"
+        run: "echo RELEASE_VERSION=${GITHUB_REF:10} >> $GITHUB_ENV"
+      - name: "Run Poetry Version"
+        run: "poetry version $RELEASE_VERSION"
+      - name: "Push to PyPI"
+        uses: "pypa/gh-action-pypi-publish@release/v1"
+        with:
+          user: "__token__"
+          password: "${{ secrets.PYPI_API_TOKEN }}"
+    needs:
+      - "unittest"
+  slack-notify:
+    needs:
+      - "publish_gh"
+      - "publish_pypi"
+    name: "Send notification to the Slack"
+    runs-on: "ubuntu-20.04"
+    env:
+      SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL }}"
+      SLACK_MESSAGE: >-
+        *NOTIFICATION: NEW-RELEASE-PUBLISHED*\n
+        Repository: <${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>\n
+        Release: <${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}|${{ github.ref_name }}>\n
+        Published by: <${{ github.server_url }}/${{ github.actor }}|${{ github.actor }}>
+    steps:
+      - name: "Send a notification to Slack"
+        # ENVs cannot be used directly in job.if. This is a workaround to check
+        # if SLACK_WEBHOOK_URL is present.
+        if: "${{ env.SLACK_WEBHOOK_URL != '' }}"
+        uses: "slackapi/slack-github-action@v1.19.0"
+        with:
+          payload: |
+            {
+              "text": "${{ env.SLACK_MESSAGE }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ env.SLACK_MESSAGE }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL }}"
+          SLACK_WEBHOOK_TYPE: "INCOMING_WEBHOOK"
